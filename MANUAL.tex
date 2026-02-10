@@ -1,0 +1,102 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{parskip}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\title{ReactWebsite Maintenance Manual}
+\author{Jose G. Chavez}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Purpose}
+ReactWebsite is a static React + Vite site for publishing reflections, art notes, mathematics notes, PDFs, and YouTube links. It is designed for GitHub Pages deployment.
+
+\section{Project Paths}
+\begin{itemize}[leftmargin=*]
+  \item \texttt{/Users/josechavez/Documents/New project/ReactWebsite/src/content/} for markdown entries
+  \item \texttt{/Users/josechavez/Documents/New project/ReactWebsite/public/pdfs/} for PDF files
+  \item \texttt{/Users/josechavez/Documents/New project/ReactWebsite/public/youtube-links.json} for YouTube links
+  \item \texttt{/Users/josechavez/Documents/New project/ReactWebsite/scripts/update-content.mjs} for index generation
+\end{itemize}
+
+\section{Local Development}
+\begin{enumerate}[leftmargin=*]
+  \item \texttt{cd /Users/josechavez/Documents/New project/ReactWebsite}
+  \item \texttt{npm install}
+  \item \texttt{npm run update-content}
+  \item \texttt{npm run dev}
+\end{enumerate}
+
+\section{Adding New Reflections}
+\begin{enumerate}[leftmargin=*]
+  \item Create a markdown file in \texttt{src/content/}.
+  \item Use this frontmatter structure:
+\end{enumerate}
+
+\begin{verbatim}
+---
+id: unique-id
+title: Your title
+date: 2026-02-10
+category: religious
+type: article
+summary: Short summary
+tags: prayer, notes
+hero: Short hero phrase
+---
+# Heading
+Body text...
+\end{verbatim}
+
+\begin{enumerate}[leftmargin=*]
+  \item Run \texttt{npm run update-content}.
+\end{enumerate}
+
+\section{Adding PDFs}
+\begin{enumerate}[leftmargin=*]
+  \item Add files under one of these folders:
+\begin{itemize}[leftmargin=*]
+  \item \texttt{public/pdfs/religious}
+  \item \texttt{public/pdfs/art}
+  \item \texttt{public/pdfs/mathematics}
+  \item \texttt{public/pdfs/talk}
+\end{itemize}
+  \item Run \texttt{npm run update-content} to regenerate \texttt{src/content/pdfs.json}.
+\end{enumerate}
+
+\section{Adding YouTube Links}
+Edit \texttt{public/youtube-links.json}. Example:
+
+\begin{verbatim}
+[
+  {
+    "id": "video-001",
+    "title": "My reflection",
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID",
+    "notes": "Context",
+    "addedAt": "2026-02-10T00:00:00.000Z"
+  }
+]
+\end{verbatim}
+
+\section{Daily Thoughts}
+Daily Thoughts are browser-local and not automatically committed. Use:
+\begin{itemize}[leftmargin=*]
+  \item \texttt{Export all to Markdown}
+  \item \texttt{Promote to entry}
+\end{itemize}
+Then move the downloaded markdown files into \texttt{src/content/} and run \texttt{npm run update-content}.
+
+\section{GitHub Pages Deployment}
+The workflow file \texttt{.github/workflows/deploy-pages.yml} deploys on every push to \texttt{main}.
+
+\begin{enumerate}[leftmargin=*]
+  \item Ensure GitHub Pages source is set to \texttt{GitHub Actions}.
+  \item Commit and push changes to \texttt{main}.
+  \item Wait for the deployment workflow to complete.
+\end{enumerate}
+
+\end{document}
