@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function Art({ entries, pdfLibrary }) {
+export default function Art({ entries, pdfLibrary, canAccessArticles }) {
   const navigate = useNavigate();
   const artEntries = useMemo(() => entries.filter((entry) => entry.category === "art"), [entries]);
   const files = pdfLibrary.art || [];
@@ -40,7 +40,13 @@ export default function Art({ entries, pdfLibrary }) {
             </article>
           ))}
 
-          {artEntries.length === 0 && <p className="muted">No art entries yet.</p>}
+          {artEntries.length === 0 && (
+            <p className="muted">
+              {canAccessArticles
+                ? "No art entries yet."
+                : "Art page is open. Full-access article drafts are hidden in visitor mode."}
+            </p>
+          )}
         </div>
       </section>
 

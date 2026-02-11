@@ -23,6 +23,7 @@ function AppLinkAction({ canUseApps, href, children, onRequestSignIn }) {
 
 export default function Home({
   entries,
+  meditations,
   categoryLabels,
   typeLabels,
   pdfCategories,
@@ -36,7 +37,8 @@ export default function Home({
   isPlaying,
   onTogglePlayback,
   canUseApps,
-  canAccessPrivate,
+  canAccessArticles,
+  articlesError,
   onRequestSignIn,
 }) {
   const location = useLocation();
@@ -91,6 +93,7 @@ export default function Home({
     () => entries.filter((entry) => entry.category === "religious"),
     [entries]
   );
+  const liturgyEntries = canAccessArticles ? religiousEntries : meditations;
 
   const activeTrack = sacredAudio.find((track) => track.id === trackId) || sacredAudio[0];
 
@@ -270,8 +273,6 @@ export default function Home({
         </div>
       </section>
 
-      {canAccessPrivate ? (
-        <>
       <section className="sacred">
         <div className="sacred-text">
           <p className="eyebrow">Sacred Media</p>
@@ -341,7 +342,7 @@ export default function Home({
         </div>
 
         <div className="liturgy-grid">
-          {religiousEntries.map((entry) => (
+          {liturgyEntries.map((entry) => (
             <button key={entry.id} className="liturgy-card" onClick={() => setActiveId(entry.id)}>
               <span className="chip">{formatDate(entry.date)}</span>
               <h3>{entry.title}</h3>
@@ -349,6 +350,7 @@ export default function Home({
               <span className="liturgy-hero">{entry.hero || "Quiet note"}</span>
             </button>
           ))}
+          {liturgyEntries.length === 0 ? <p className="muted">No meditations available yet.</p> : null}
         </div>
       </section>
 
@@ -410,6 +412,8 @@ export default function Home({
         </div>
       </section>
 
+      {canAccessArticles ? (
+        <>
       <section className="filters">
         <div className="filter-group">
           <span className="filter-label">Category</span>
@@ -551,6 +555,21 @@ export default function Home({
           })}
         </div>
       </section>
+        </>
+      ) : (
+        <section className="locked-zone">
+          <p className="eyebrow">Protected Article Library</p>
+          <h2>Full access required for articles and PDF archives.</h2>
+          <p>
+            Public users can view intro and daily meditations. Visitor accounts can access app
+            links and member pages. Full accounts unlock article reading.
+          </p>
+          {articlesError ? <p className="auth-error">{articlesError}</p> : null}
+          <button type="button" className="pill" onClick={onRequestSignIn}>
+            Sign in for full article access
+          </button>
+        </section>
+      )}
 
       <footer className="credits">
         <p className="filter-label">Credits</p>
@@ -568,20 +587,6 @@ export default function Home({
           ))}
         </div>
       </footer>
-        </>
-      ) : (
-        <section className="locked-zone">
-          <p className="eyebrow">Protected Library</p>
-          <h2>Full access required for articles and private study materials.</h2>
-          <p>
-            Visitor accounts can use the app links above. Sign in with a full-access account to
-            browse entries, PDFs, liturgy cards, and daily-thought tools.
-          </p>
-          <button type="button" className="pill" onClick={onRequestSignIn}>
-            Sign in for full access
-          </button>
-        </section>
-      )}
     </>
   );
 }

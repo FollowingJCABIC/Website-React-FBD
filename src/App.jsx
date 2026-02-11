@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HashRouter, NavLink, Navigate, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home.jsx";
 import Art from "./pages/Art.jsx";
 import YouTube from "./pages/YouTube.jsx";
-import { rawEntries } from "./content/index.js";
-import pdfLibrary from "./content/pdfs.json";
 import { SACRED_AUDIO, SACRED_IMAGES } from "./content/sacred.js";
 
 const CATEGORY_LABELS = {
@@ -26,85 +24,24 @@ const PDF_CATEGORIES = [
   { id: "talk", label: "Let's Talk" },
 ];
 
-const AUTH_STORAGE_KEY = "last-day-studio-auth-v1";
 const ROLE_NONE = "none";
 const ROLE_VISITOR = "visitor";
 const ROLE_FULL = "full";
-const FALLBACK_VISITOR_EMAIL = "visitor@lastday.studio";
-const FALLBACK_VISITOR_PASSWORD = "Visitor#2026";
-const FALLBACK_FULL_EMAIL = "admin@lastday.studio";
-const FALLBACK_FULL_PASSWORD = "LastDay#2026";
-
-function parseFrontmatter(raw) {
-  if (!raw.startsWith("---")) {
-    return { meta: {}, body: raw.trim() };
-  }
-
-  const [, frontmatter, ...rest] = raw.split("---");
-  const meta = {};
-
-  frontmatter
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .forEach((line) => {
-      const [key, ...valueParts] = line.split(":");
-      if (!key) return;
-      const value = valueParts.join(":").trim();
-      meta[key.trim().toLowerCase()] = value;
-    });
-
-  return {
-    meta,
-    body: rest.join("---").trim(),
-  };
-}
-
-function normalizeEntry(raw, index) {
-  const { meta, body } = parseFrontmatter(raw);
-  const tags = String(meta.tags || "")
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-
-  return {
-    id: meta.id || `entry-${index}`,
-    title: meta.title || "Untitled",
-    date: meta.date || "",
-    category: meta.category || "talk",
-    type: meta.type || "article",
-    summary: meta.summary || "",
-    tags,
-    hero: meta.hero || "",
-    body,
-  };
-}
+const DEFAULT_PDF_LIBRARY = {
+  religious: [],
+  art: [],
+  mathematics: [],
+  talk: [],
+};
 
 function AppShell() {
-  const entries = useMemo(
-    () => rawEntries.map(normalizeEntry).sort((a, b) => (a.date < b.date ? 1 : -1)),
-    []
-  );
+  const [entries, setEntries] = useState([]);
+  const [meditations, setMeditations] = useState([]);
+  const [pdfLibrary, setPdfLibrary] = useState(DEFAULT_PDF_LIBRARY);
+  const [articlesError, setArticlesError] = useState("");
 
-  const visitorEmail = String(import.meta.env.VITE_VISITOR_EMAIL || "").trim().toLowerCase() || FALLBACK_VISITOR_EMAIL;
-  const visitorPassword = String(import.meta.env.VITE_VISITOR_PASSWORD || "") || FALLBACK_VISITOR_PASSWORD;
-  const fullEmail = String(import.meta.env.VITE_FULL_EMAIL || "").trim().toLowerCase() || FALLBACK_FULL_EMAIL;
-  const fullPassword = String(import.meta.env.VITE_FULL_PASSWORD || "") || FALLBACK_FULL_PASSWORD;
-
-  const [authRole, setAuthRole] = useState(() => {
-    if (typeof window === "undefined") return ROLE_NONE;
-    try {
-      const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
-      if (!raw) return ROLE_NONE;
-      const parsed = JSON.parse(raw);
-      if (parsed?.role === ROLE_VISITOR || parsed?.role === ROLE_FULL) {
-        return parsed.role;
-      }
-      return ROLE_NONE;
-    } catch (_error) {
-      return ROLE_NONE;
-    }
-  });
+  const [authRole, setAuthRole] = useState(ROLE_NONE);
+  const [authLoading, setAuthLoading] = useState(true);
   const [authPanelOpen, setAuthPanelOpen] = useState(false);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -114,8 +51,10 @@ function AppShell() {
   const [isLooping, setIsLooping] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
+
   const canUseApps = authRole === ROLE_VISITOR || authRole === ROLE_FULL;
-  const canAccessPrivate = authRole === ROLE_FULL;
+  const canUseMemberPages = canUseApps;
+  const canAccessArticles = authRole === ROLE_FULL;
 
   const activeTrack = SACRED_AUDIO.find((track) => track.id === trackId) || SACRED_AUDIO[0];
 
@@ -145,53 +84,157 @@ function AppShell() {
   }, [trackId]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (authRole === ROLE_NONE) {
-      window.localStorage.removeItem(AUTH_STORAGE_KEY);
-      return;
-    }
-    window.localStorage.setItem(
-      AUTH_STORAGE_KEY,
-      JSON.stringify({
-        role: authRole,
-        signedAt: new Date().toISOString(),
-      })
-    );
-  }, [authRole]);
+    let cancelled = false;
 
-  function onAuthSubmit(event) {
+    async function boot() {
+      try {
+        const [sessionRes, meditationsRes] = await Promise.all([
+          fetch("/api/auth/session", { credentials: "include" }),
+          fetch("/api/meditations"),
+        ]);
+
+        if (!cancelled) {
+          if (sessionRes.ok) {
+            const session = await sessionRes.json();
+            setAuthRole(session?.role || ROLE_NONE);
+          } else {
+            setAuthRole(ROLE_NONE);
+          }
+
+          if (meditationsRes.ok) {
+            const meditationsPayload = await meditationsRes.json();
+            setMeditations(Array.isArray(meditationsPayload?.entries) ? meditationsPayload.entries : []);
+          } else {
+            setMeditations([]);
+          }
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setAuthRole(ROLE_NONE);
+          setMeditations([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthLoading(false);
+        }
+      }
+    }
+
+    boot();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!canAccessArticles) {
+      setEntries([]);
+      setPdfLibrary(DEFAULT_PDF_LIBRARY);
+      setArticlesError("");
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadArticles() {
+      try {
+        const [articlesRes, pdfRes] = await Promise.all([
+          fetch("/api/articles", { credentials: "include" }),
+          fetch("/api/pdfs", { credentials: "include" }),
+        ]);
+
+        const payload = await articlesRes.json().catch(() => ({}));
+        const pdfPayload = await pdfRes.json().catch(() => ({}));
+
+        if (cancelled) return;
+
+        if (!articlesRes.ok) {
+          setEntries([]);
+          setPdfLibrary(DEFAULT_PDF_LIBRARY);
+          setArticlesError(payload?.error || "Could not load articles.");
+          return;
+        }
+
+        setEntries(Array.isArray(payload?.entries) ? payload.entries : []);
+        setPdfLibrary(
+          pdfRes.ok && pdfPayload?.pdfLibrary && typeof pdfPayload.pdfLibrary === "object"
+            ? pdfPayload.pdfLibrary
+            : DEFAULT_PDF_LIBRARY
+        );
+        setArticlesError("");
+      } catch (_error) {
+        if (cancelled) return;
+        setEntries([]);
+        setPdfLibrary(DEFAULT_PDF_LIBRARY);
+        setArticlesError("Could not load articles.");
+      }
+    }
+
+    loadArticles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canAccessArticles]);
+
+  async function onAuthSubmit(event) {
     event.preventDefault();
-    const email = authEmail.trim().toLowerCase();
-    const password = authPassword;
-    if (email === fullEmail && password === fullPassword) {
-      setAuthRole(ROLE_FULL);
+    setAuthError("");
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: authEmail.trim().toLowerCase(),
+          password: authPassword,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setAuthError(payload?.error || "Sign in failed.");
+        return;
+      }
+
+      const nextRole = payload?.role === ROLE_FULL || payload?.role === ROLE_VISITOR ? payload.role : ROLE_NONE;
+      setAuthRole(nextRole);
       setAuthPanelOpen(false);
-      setAuthError("");
       setAuthPassword("");
-      return;
+    } catch (_error) {
+      setAuthError("Sign in failed.");
     }
-    if (email === visitorEmail && password === visitorPassword) {
-      setAuthRole(ROLE_VISITOR);
-      setAuthPanelOpen(false);
-      setAuthError("");
-      setAuthPassword("");
-      return;
-    }
-    setAuthError("Credentials did not match a visitor or full account.");
   }
 
-  function signOut() {
+  async function signOut() {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (_error) {
+      // Best effort sign-out.
+    }
+
     setAuthRole(ROLE_NONE);
     setAuthPanelOpen(false);
     setAuthEmail("");
     setAuthPassword("");
     setAuthError("");
+    setEntries([]);
+    setPdfLibrary(DEFAULT_PDF_LIBRARY);
+    setArticlesError("");
   }
 
-  function requireFullAccess(event) {
-    if (canAccessPrivate) return;
+  function requireMemberAccess(event) {
+    if (canUseMemberPages) return;
     event.preventDefault();
-    setAuthError("Full access login is required for this section.");
+    setAuthError("Visitor or full login is required for this page.");
     setAuthPanelOpen(true);
   }
 
@@ -215,22 +258,24 @@ function AppShell() {
           </NavLink>
           <NavLink
             to="/art"
-            onClick={requireFullAccess}
-            className={({ isActive }) => `${isActive ? "active" : ""} ${canAccessPrivate ? "" : "locked-nav"}`.trim()}
+            onClick={requireMemberAccess}
+            className={({ isActive }) => `${isActive ? "active" : ""} ${canUseMemberPages ? "" : "locked-nav"}`.trim()}
           >
             Art Hall
           </NavLink>
           <NavLink
             to="/youtube"
-            onClick={requireFullAccess}
-            className={({ isActive }) => `${isActive ? "active" : ""} ${canAccessPrivate ? "" : "locked-nav"}`.trim()}
+            onClick={requireMemberAccess}
+            className={({ isActive }) => `${isActive ? "active" : ""} ${canUseMemberPages ? "" : "locked-nav"}`.trim()}
           >
             YouTube
           </NavLink>
         </nav>
 
         <div className="auth-bar">
-          {authRole === ROLE_NONE ? (
+          {authLoading ? <span className="auth-state">Checking session...</span> : null}
+
+          {!authLoading && authRole === ROLE_NONE ? (
             <>
               <button className="pill auth-button" type="button" onClick={() => setAuthPanelOpen((prev) => !prev)}>
                 Sign in
@@ -255,12 +300,14 @@ function AppShell() {
                   <button className="pill auth-submit" type="submit">
                     Unlock
                   </button>
-                  <p className="auth-hint">Visitor unlocks app links. Full unlocks articles and library.</p>
+                  <p className="auth-hint">Visitor unlocks app/member pages. Full unlocks article library.</p>
                   {authError ? <p className="auth-error">{authError}</p> : null}
                 </form>
               ) : null}
             </>
-          ) : (
+          ) : null}
+
+          {!authLoading && authRole !== ROLE_NONE ? (
             <>
               <span className="auth-state">
                 Signed in: {authRole === ROLE_FULL ? "Full access" : "Visitor access"}
@@ -297,7 +344,7 @@ function AppShell() {
                 </form>
               ) : null}
             </>
-          )}
+          ) : null}
         </div>
       </header>
 
@@ -308,6 +355,7 @@ function AppShell() {
             element={
               <Home
                 entries={entries}
+                meditations={meditations}
                 categoryLabels={CATEGORY_LABELS}
                 typeLabels={TYPE_LABELS}
                 pdfCategories={PDF_CATEGORIES}
@@ -321,7 +369,8 @@ function AppShell() {
                 isPlaying={isPlaying}
                 onTogglePlayback={togglePlayback}
                 canUseApps={canUseApps}
-                canAccessPrivate={canAccessPrivate}
+                canAccessArticles={canAccessArticles}
+                articlesError={articlesError}
                 onRequestSignIn={() => {
                   setAuthError("");
                   setAuthPanelOpen(true);
@@ -331,15 +380,9 @@ function AppShell() {
           />
           <Route
             path="/art"
-            element={
-              canAccessPrivate ? (
-                <Art entries={entries} pdfLibrary={pdfLibrary} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
+            element={canUseMemberPages ? <Art entries={entries} pdfLibrary={pdfLibrary} canAccessArticles={canAccessArticles} /> : <Navigate to="/" replace />}
           />
-          <Route path="/youtube" element={canAccessPrivate ? <YouTube /> : <Navigate to="/" replace />} />
+          <Route path="/youtube" element={canUseMemberPages ? <YouTube /> : <Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
