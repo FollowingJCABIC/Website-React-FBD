@@ -140,6 +140,12 @@ export default function Home({
 
   return (
     <>
+      <section className="trinity-banner" aria-label="Hebrew Trinity banner">
+        <p className="trinity-hebrew" lang="he" dir="rtl">
+          האב • הבן • רוח הקודש
+        </p>
+      </section>
+
       <section className="hero">
         <p className="eyebrow">Last Day Studio</p>
         <h1>Religious reflections, art drafts, math notes, and open talk.</h1>
