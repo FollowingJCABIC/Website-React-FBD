@@ -220,6 +220,14 @@ export default function Home({
               Open texas-holdem-lan-web.vercel.app
             </a>
           </article>
+
+          <article className="app-link-card">
+            <h3>Sudoku Studio</h3>
+            <p>Play seeded Sudoku with notes, hints, strategy guides, and custom themes.</p>
+            <a className="pill" href="/apps/sudoku/index.html" target="_blank" rel="noreferrer">
+              Open Sudoku Studio
+            </a>
+          </article>
         </div>
       </section>
 
