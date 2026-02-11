@@ -154,6 +154,48 @@ export default function Home({
         </p>
       </section>
 
+      <section className="external-apps">
+        <div className="apps-intro">
+          <p className="eyebrow">More Activities</p>
+          <h2>Other Activities & Applications</h2>
+          <p>Visit these standalone apps for more interactive practice and creative work.</p>
+        </div>
+
+        <div className="apps-grid">
+          <article className="app-link-card">
+            <h3>Color Mixing App</h3>
+            <p>Hands-on additive and subtractive color labs, with guided visual activities.</p>
+            <a className="pill" href="https://color-mixing-app.vercel.app" target="_blank" rel="noreferrer">
+              Open color-mixing-app.vercel.app
+            </a>
+          </article>
+
+          <article className="app-link-card">
+            <h3>Songwriter App</h3>
+            <p>Songwriting prompts, drafting workspace, and music-theory tools for practice.</p>
+            <a className="pill" href="https://songwriter-app.vercel.app" target="_blank" rel="noreferrer">
+              Open songwriter-app.vercel.app
+            </a>
+          </article>
+
+          <article className="app-link-card">
+            <h3>Crossword Creator</h3>
+            <p>Generate custom crosswords from your own word lists and export results.</p>
+            <a className="pill" href="https://crossword-creator-drab.vercel.app" target="_blank" rel="noreferrer">
+              Open crossword-creator-drab.vercel.app
+            </a>
+          </article>
+
+          <article className="app-link-card">
+            <h3>Texas Hold'em Web</h3>
+            <p>Play the browser version of your Texas Hold'em project and test game flow.</p>
+            <a className="pill" href="https://texas-holdem-lan-web.vercel.app" target="_blank" rel="noreferrer">
+              Open texas-holdem-lan-web.vercel.app
+            </a>
+          </article>
+        </div>
+      </section>
+
       <section className="sacred">
         <div className="sacred-text">
           <p className="eyebrow">Sacred Media</p>

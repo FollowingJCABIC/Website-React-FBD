@@ -825,3 +825,54 @@ select {
     gap: 8px;
   }
 }
+
+.external-apps {
+  border-radius: var(--radius);
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow);
+  background: rgba(255, 255, 255, 0.82);
+  padding: 26px;
+}
+
+.apps-intro h2 {
+  margin: 0 0 10px;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 2rem;
+}
+
+.apps-intro p {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.apps-grid {
+  margin-top: 18px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.app-link-card {
+  border: 1px solid rgba(143, 15, 28, 0.2);
+  border-radius: 18px;
+  padding: 16px;
+  background: #fff7f4;
+  display: grid;
+  gap: 10px;
+}
+
+.app-link-card h3 {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+}
+
+.app-link-card p {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.app-link-card .pill {
+  width: fit-content;
+}
