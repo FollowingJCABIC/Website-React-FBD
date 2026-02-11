@@ -163,6 +163,27 @@ export default function Home({
 
         <div className="apps-grid">
           <article className="app-link-card">
+            <h3>Dictionary Thesaurus Translator</h3>
+            <p>Search definitions, synonyms, and quick translations in one focused workspace.</p>
+            <a
+              className="pill"
+              href="https://dictionary-thesaurus-translator.vercel.app"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open dictionary-thesaurus-translator.vercel.app
+            </a>
+          </article>
+
+          <article className="app-link-card">
+            <h3>Language Studio</h3>
+            <p>Interactive language lessons and practice tools for daily study sessions.</p>
+            <a className="pill" href="https://language-studio-five.vercel.app" target="_blank" rel="noreferrer">
+              Open language-studio-five.vercel.app
+            </a>
+          </article>
+
+          <article className="app-link-card">
             <h3>Color Mixing App</h3>
             <p>Hands-on additive and subtractive color labs, with guided visual activities.</p>
             <a className="pill" href="https://color-mixing-app.vercel.app" target="_blank" rel="noreferrer">
