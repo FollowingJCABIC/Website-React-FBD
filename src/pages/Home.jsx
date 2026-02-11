@@ -181,8 +181,8 @@ export default function Home({
           <article className="app-link-card">
             <h3>Crossword Creator</h3>
             <p>Generate custom crosswords from your own word lists and export results.</p>
-            <a className="pill" href="https://crossword-creator-drab.vercel.app" target="_blank" rel="noreferrer">
-              Open crossword-creator-drab.vercel.app
+            <a className="pill" href="https://crossword-creator-app.vercel.app" target="_blank" rel="noreferrer">
+              Open crossword-creator-app.vercel.app
             </a>
           </article>
 
