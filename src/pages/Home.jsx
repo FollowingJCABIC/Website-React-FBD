@@ -5,6 +5,22 @@ import { renderMarkdown } from "../lib/content-utils.js";
 
 const THOUGHTS_KEY = "daily-thoughts-v1";
 
+function AppLinkAction({ canUseApps, href, children, onRequestSignIn }) {
+  if (canUseApps) {
+    return (
+      <a className="pill" href={href} target="_blank" rel="noreferrer">
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <button type="button" className="pill locked-pill" onClick={onRequestSignIn}>
+      Sign in to open
+    </button>
+  );
+}
+
 export default function Home({
   entries,
   categoryLabels,
@@ -19,6 +35,9 @@ export default function Home({
   setIsLooping,
   isPlaying,
   onTogglePlayback,
+  canUseApps,
+  canAccessPrivate,
+  onRequestSignIn,
 }) {
   const location = useLocation();
 
@@ -165,72 +184,94 @@ export default function Home({
           <p className="eyebrow">More Activities</p>
           <h2>Other Activities & Applications</h2>
           <p>Visit these standalone apps for more interactive practice and creative work.</p>
+          {!canUseApps ? <p className="lock-note">Visitor or full sign-in is required to open app links.</p> : null}
         </div>
 
         <div className="apps-grid">
           <article className="app-link-card">
             <h3>Dictionary Thesaurus Translator</h3>
             <p>Search definitions, synonyms, and quick translations in one focused workspace.</p>
-            <a
-              className="pill"
+            <AppLinkAction
+              canUseApps={canUseApps}
               href="https://dictionary-thesaurus-translator.vercel.app"
-              target="_blank"
-              rel="noreferrer"
+              onRequestSignIn={onRequestSignIn}
             >
               Open dictionary-thesaurus-translator.vercel.app
-            </a>
+            </AppLinkAction>
           </article>
 
           <article className="app-link-card">
             <h3>Language Studio</h3>
             <p>Interactive language lessons and practice tools for daily study sessions.</p>
-            <a className="pill" href="https://language-studio-five.vercel.app" target="_blank" rel="noreferrer">
+            <AppLinkAction
+              canUseApps={canUseApps}
+              href="https://language-studio-five.vercel.app"
+              onRequestSignIn={onRequestSignIn}
+            >
               Open language-studio-five.vercel.app
-            </a>
+            </AppLinkAction>
           </article>
 
           <article className="app-link-card">
             <h3>Color Mixing App</h3>
             <p>Hands-on additive and subtractive color labs, with guided visual activities.</p>
-            <a className="pill" href="https://color-mixing-app.vercel.app" target="_blank" rel="noreferrer">
+            <AppLinkAction
+              canUseApps={canUseApps}
+              href="https://color-mixing-app.vercel.app"
+              onRequestSignIn={onRequestSignIn}
+            >
               Open color-mixing-app.vercel.app
-            </a>
+            </AppLinkAction>
           </article>
 
           <article className="app-link-card">
             <h3>Songwriter App</h3>
             <p>Songwriting prompts, drafting workspace, and music-theory tools for practice.</p>
-            <a className="pill" href="https://songwriter-app.vercel.app" target="_blank" rel="noreferrer">
+            <AppLinkAction
+              canUseApps={canUseApps}
+              href="https://songwriter-app.vercel.app"
+              onRequestSignIn={onRequestSignIn}
+            >
               Open songwriter-app.vercel.app
-            </a>
+            </AppLinkAction>
           </article>
 
           <article className="app-link-card">
             <h3>Crossword Creator</h3>
             <p>Generate custom crosswords from your own word lists and export results.</p>
-            <a className="pill" href="https://crossword-creator-app.vercel.app" target="_blank" rel="noreferrer">
+            <AppLinkAction
+              canUseApps={canUseApps}
+              href="https://crossword-creator-app.vercel.app"
+              onRequestSignIn={onRequestSignIn}
+            >
               Open crossword-creator-app.vercel.app
-            </a>
+            </AppLinkAction>
           </article>
 
           <article className="app-link-card">
             <h3>Texas Hold'em Web</h3>
             <p>Play the browser version of your Texas Hold'em project and test game flow.</p>
-            <a className="pill" href="https://texas-holdem-lan-web.vercel.app" target="_blank" rel="noreferrer">
+            <AppLinkAction
+              canUseApps={canUseApps}
+              href="https://texas-holdem-lan-web.vercel.app"
+              onRequestSignIn={onRequestSignIn}
+            >
               Open texas-holdem-lan-web.vercel.app
-            </a>
+            </AppLinkAction>
           </article>
 
           <article className="app-link-card">
             <h3>Sudoku Studio</h3>
             <p>Play seeded Sudoku with notes, hints, strategy guides, and custom themes.</p>
-            <a className="pill" href="/apps/sudoku/index.html" target="_blank" rel="noreferrer">
+            <AppLinkAction canUseApps={canUseApps} href="/apps/sudoku/index.html" onRequestSignIn={onRequestSignIn}>
               Open Sudoku Studio
-            </a>
+            </AppLinkAction>
           </article>
         </div>
       </section>
 
+      {canAccessPrivate ? (
+        <>
       <section className="sacred">
         <div className="sacred-text">
           <p className="eyebrow">Sacred Media</p>
@@ -527,6 +568,20 @@ export default function Home({
           ))}
         </div>
       </footer>
+        </>
+      ) : (
+        <section className="locked-zone">
+          <p className="eyebrow">Protected Library</p>
+          <h2>Full access required for articles and private study materials.</h2>
+          <p>
+            Visitor accounts can use the app links above. Sign in with a full-access account to
+            browse entries, PDFs, liturgy cards, and daily-thought tools.
+          </p>
+          <button type="button" className="pill" onClick={onRequestSignIn}>
+            Sign in for full access
+          </button>
+        </section>
+      )}
     </>
   );
 }

@@ -93,6 +93,7 @@ a {
   border-bottom: 1px solid rgba(143, 15, 28, 0.14);
   background: rgba(255, 240, 236, 0.92);
   backdrop-filter: blur(8px);
+  flex-wrap: wrap;
 }
 
 .brand {
@@ -135,6 +136,57 @@ a {
 .nav-links a:hover {
   border-color: var(--accent);
   background: rgba(143, 15, 28, 0.08);
+}
+
+.nav-links a.locked-nav {
+  opacity: 0.65;
+}
+
+.auth-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  position: relative;
+}
+
+.auth-state {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.auth-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 280px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(143, 15, 28, 0.2);
+  border-radius: 14px;
+  box-shadow: 0 14px 26px rgba(30, 14, 16, 0.2);
+}
+
+.auth-panel input {
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+  padding: 8px 10px;
+  background: #fff;
+}
+
+.auth-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.auth-error {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #8f0f1c;
 }
 
 .app-grid {
@@ -242,6 +294,15 @@ select {
   background: var(--ink);
   color: #fff9f4;
   border-color: var(--ink);
+}
+
+.pill.locked-pill {
+  border-color: rgba(143, 15, 28, 0.4);
+}
+
+.pill:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .sacred,
@@ -812,6 +873,18 @@ select {
     padding: 12px 18px;
   }
 
+  .auth-bar {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .auth-panel {
+    position: static;
+    width: 100%;
+    min-width: 0;
+  }
+
   .sacred,
   .grid,
   .detail-hero {
@@ -870,6 +943,12 @@ select {
   line-height: 1.6;
 }
 
+.lock-note {
+  margin-top: 8px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .apps-grid {
   margin-top: 18px;
   display: grid;
@@ -899,4 +978,26 @@ select {
 
 .app-link-card .pill {
   width: fit-content;
+}
+
+.locked-zone {
+  border-radius: var(--radius);
+  border: 1px dashed rgba(143, 15, 28, 0.42);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  display: grid;
+  gap: 10px;
+}
+
+.locked-zone h2 {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 2rem;
+}
+
+.locked-zone p {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.6;
 }

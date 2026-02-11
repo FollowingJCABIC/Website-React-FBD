@@ -26,6 +26,15 @@ const PDF_CATEGORIES = [
   { id: "talk", label: "Let's Talk" },
 ];
 
+const AUTH_STORAGE_KEY = "last-day-studio-auth-v1";
+const ROLE_NONE = "none";
+const ROLE_VISITOR = "visitor";
+const ROLE_FULL = "full";
+const FALLBACK_VISITOR_EMAIL = "visitor@lastday.studio";
+const FALLBACK_VISITOR_PASSWORD = "Visitor#2026";
+const FALLBACK_FULL_EMAIL = "admin@lastday.studio";
+const FALLBACK_FULL_PASSWORD = "LastDay#2026";
+
 function parseFrontmatter(raw) {
   if (!raw.startsWith("---")) {
     return { meta: {}, body: raw.trim() };
@@ -77,10 +86,36 @@ function AppShell() {
     []
   );
 
+  const visitorEmail = String(import.meta.env.VITE_VISITOR_EMAIL || "").trim().toLowerCase() || FALLBACK_VISITOR_EMAIL;
+  const visitorPassword = String(import.meta.env.VITE_VISITOR_PASSWORD || "") || FALLBACK_VISITOR_PASSWORD;
+  const fullEmail = String(import.meta.env.VITE_FULL_EMAIL || "").trim().toLowerCase() || FALLBACK_FULL_EMAIL;
+  const fullPassword = String(import.meta.env.VITE_FULL_PASSWORD || "") || FALLBACK_FULL_PASSWORD;
+
+  const [authRole, setAuthRole] = useState(() => {
+    if (typeof window === "undefined") return ROLE_NONE;
+    try {
+      const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!raw) return ROLE_NONE;
+      const parsed = JSON.parse(raw);
+      if (parsed?.role === ROLE_VISITOR || parsed?.role === ROLE_FULL) {
+        return parsed.role;
+      }
+      return ROLE_NONE;
+    } catch (_error) {
+      return ROLE_NONE;
+    }
+  });
+  const [authPanelOpen, setAuthPanelOpen] = useState(false);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+
   const [trackId, setTrackId] = useState(SACRED_AUDIO[0]?.id ?? "");
   const [isLooping, setIsLooping] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
+  const canUseApps = authRole === ROLE_VISITOR || authRole === ROLE_FULL;
+  const canAccessPrivate = authRole === ROLE_FULL;
 
   const activeTrack = SACRED_AUDIO.find((track) => track.id === trackId) || SACRED_AUDIO[0];
 
@@ -109,8 +144,59 @@ function AppShell() {
     if (isPlaying) play();
   }, [trackId]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (authRole === ROLE_NONE) {
+      window.localStorage.removeItem(AUTH_STORAGE_KEY);
+      return;
+    }
+    window.localStorage.setItem(
+      AUTH_STORAGE_KEY,
+      JSON.stringify({
+        role: authRole,
+        signedAt: new Date().toISOString(),
+      })
+    );
+  }, [authRole]);
+
+  function onAuthSubmit(event) {
+    event.preventDefault();
+    const email = authEmail.trim().toLowerCase();
+    const password = authPassword;
+    if (email === fullEmail && password === fullPassword) {
+      setAuthRole(ROLE_FULL);
+      setAuthPanelOpen(false);
+      setAuthError("");
+      setAuthPassword("");
+      return;
+    }
+    if (email === visitorEmail && password === visitorPassword) {
+      setAuthRole(ROLE_VISITOR);
+      setAuthPanelOpen(false);
+      setAuthError("");
+      setAuthPassword("");
+      return;
+    }
+    setAuthError("Credentials did not match a visitor or full account.");
+  }
+
+  function signOut() {
+    setAuthRole(ROLE_NONE);
+    setAuthPanelOpen(false);
+    setAuthEmail("");
+    setAuthPassword("");
+    setAuthError("");
+  }
+
+  function requireFullAccess(event) {
+    if (canAccessPrivate) return;
+    event.preventDefault();
+    setAuthError("Full access login is required for this section.");
+    setAuthPanelOpen(true);
+  }
+
   return (
-    <div className="app">
+    <div className={`app ${authRole === ROLE_NONE ? "is-locked" : "is-authenticated"}`}>
       <div className="orb orb-one" />
       <div className="orb orb-two" />
 
@@ -127,9 +213,92 @@ function AppShell() {
           <NavLink to="/" end>
             Home
           </NavLink>
-          <NavLink to="/art">Art Hall</NavLink>
-          <NavLink to="/youtube">YouTube</NavLink>
+          <NavLink
+            to="/art"
+            onClick={requireFullAccess}
+            className={({ isActive }) => `${isActive ? "active" : ""} ${canAccessPrivate ? "" : "locked-nav"}`.trim()}
+          >
+            Art Hall
+          </NavLink>
+          <NavLink
+            to="/youtube"
+            onClick={requireFullAccess}
+            className={({ isActive }) => `${isActive ? "active" : ""} ${canAccessPrivate ? "" : "locked-nav"}`.trim()}
+          >
+            YouTube
+          </NavLink>
         </nav>
+
+        <div className="auth-bar">
+          {authRole === ROLE_NONE ? (
+            <>
+              <button className="pill auth-button" type="button" onClick={() => setAuthPanelOpen((prev) => !prev)}>
+                Sign in
+              </button>
+              {authPanelOpen ? (
+                <form className="auth-panel" onSubmit={onAuthSubmit}>
+                  <p className="filter-label">Sign in (visitor or full)</p>
+                  <input
+                    type="email"
+                    placeholder="email"
+                    value={authEmail}
+                    onChange={(event) => setAuthEmail(event.target.value)}
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="password"
+                    value={authPassword}
+                    onChange={(event) => setAuthPassword(event.target.value)}
+                    required
+                  />
+                  <button className="pill auth-submit" type="submit">
+                    Unlock
+                  </button>
+                  <p className="auth-hint">Visitor unlocks app links. Full unlocks articles and library.</p>
+                  {authError ? <p className="auth-error">{authError}</p> : null}
+                </form>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <span className="auth-state">
+                Signed in: {authRole === ROLE_FULL ? "Full access" : "Visitor access"}
+              </span>
+              {authRole === ROLE_VISITOR ? (
+                <button className="pill auth-button" type="button" onClick={() => setAuthPanelOpen((prev) => !prev)}>
+                  Upgrade to full
+                </button>
+              ) : null}
+              <button className="pill auth-button" type="button" onClick={signOut}>
+                Sign out
+              </button>
+              {authPanelOpen ? (
+                <form className="auth-panel" onSubmit={onAuthSubmit}>
+                  <p className="filter-label">Upgrade access</p>
+                  <input
+                    type="email"
+                    placeholder="full-access email"
+                    value={authEmail}
+                    onChange={(event) => setAuthEmail(event.target.value)}
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="password"
+                    value={authPassword}
+                    onChange={(event) => setAuthPassword(event.target.value)}
+                    required
+                  />
+                  <button className="pill auth-submit" type="submit">
+                    Upgrade
+                  </button>
+                  {authError ? <p className="auth-error">{authError}</p> : null}
+                </form>
+              ) : null}
+            </>
+          )}
+        </div>
       </header>
 
       <main className="app-grid">
@@ -151,11 +320,26 @@ function AppShell() {
                 setIsLooping={setIsLooping}
                 isPlaying={isPlaying}
                 onTogglePlayback={togglePlayback}
+                canUseApps={canUseApps}
+                canAccessPrivate={canAccessPrivate}
+                onRequestSignIn={() => {
+                  setAuthError("");
+                  setAuthPanelOpen(true);
+                }}
               />
             }
           />
-          <Route path="/art" element={<Art entries={entries} pdfLibrary={pdfLibrary} />} />
-          <Route path="/youtube" element={<YouTube />} />
+          <Route
+            path="/art"
+            element={
+              canAccessPrivate ? (
+                <Art entries={entries} pdfLibrary={pdfLibrary} />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route path="/youtube" element={canAccessPrivate ? <YouTube /> : <Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
