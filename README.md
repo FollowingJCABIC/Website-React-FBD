@@ -2,15 +2,15 @@
 
 ## Access Model
 
-- `public` (not signed in): sees intro + public meditations.
-- `visitor` (signed in): can open app links and member pages (Art/YouTube).
+- `public` (not signed in): sees landing and can open Bible Mastery Lab from Home.
+- `visitor` (signed in): can open member routes and activity links.
 - `full` (signed in): can also load full article and PDF library data, and manage school content.
 
 ## Main Routes
 
 - `#/` Home (simplified landing hub + daily rotating masterworks panel)
-- `#/activities` external apps and activity links
-- `#/reflections` sacred media, liturgy, and daily thoughts
+- `#/activities` member route for external apps and activity links
+- `#/reflections` member route for sacred media, liturgy, and daily thoughts
 - `#/library` full-access articles, PDFs, and site assistant
 - `#/art` member page
 - `#/youtube` member page

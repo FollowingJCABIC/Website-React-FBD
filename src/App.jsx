@@ -267,8 +267,20 @@ function AppShell() {
           <NavLink to="/" end>
             Home
           </NavLink>
-          <NavLink to="/activities">Activities</NavLink>
-          <NavLink to="/reflections">Reflections</NavLink>
+          <NavLink
+            to="/activities"
+            onClick={requireMemberAccess}
+            className={({ isActive }) => `${isActive ? "active" : ""} ${canUseMemberPages ? "" : "locked-nav"}`.trim()}
+          >
+            Activities
+          </NavLink>
+          <NavLink
+            to="/reflections"
+            onClick={requireMemberAccess}
+            className={({ isActive }) => `${isActive ? "active" : ""} ${canUseMemberPages ? "" : "locked-nav"}`.trim()}
+          >
+            Reflections
+          </NavLink>
           <NavLink
             to="/library"
             onClick={requireFullAccess}
@@ -396,7 +408,7 @@ function AppShell() {
           />
           <Route
             path="/activities"
-            element={
+            element={canUseMemberPages ? (
               <Activities
                 canUseApps={canUseApps}
                 onRequestSignIn={() => {
@@ -404,11 +416,11 @@ function AppShell() {
                   setAuthPanelOpen(true);
                 }}
               />
-            }
+            ) : <Navigate to="/" replace />}
           />
           <Route
             path="/reflections"
-            element={
+            element={canUseMemberPages ? (
               <Reflections
                 entries={entries}
                 meditations={meditations}
@@ -422,7 +434,7 @@ function AppShell() {
                 onTogglePlayback={togglePlayback}
                 canAccessArticles={canAccessArticles}
               />
-            }
+            ) : <Navigate to="/" replace />}
           />
           <Route
             path="/library"

@@ -2,7 +2,9 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { MASTERWORKS } from "../content/masterworks.js";
 
-function QuickCard({ title, description, to, cta, locked, onRequestSignIn }) {
+function QuickCard({ title, description, to, href, cta, locked, onRequestSignIn }) {
+  const isExternal = Boolean(href);
+
   return (
     <article className="home-quick-card">
       <h3>{title}</h3>
@@ -11,6 +13,10 @@ function QuickCard({ title, description, to, cta, locked, onRequestSignIn }) {
         <button className="pill" type="button" onClick={onRequestSignIn}>
           Sign in to unlock
         </button>
+      ) : isExternal ? (
+        <a className="pill" href={href} target="_blank" rel="noreferrer">
+          {cta}
+        </a>
       ) : (
         <Link className="pill" to={to}>
           {cta}
@@ -63,8 +69,8 @@ export default function Home({ authRole, canUseApps, canAccessArticles, onReques
           <p className="eyebrow">Last Day Studio</p>
           <h1>Study, create, and teach from one clean workspace.</h1>
           <p className="lead">
-            Landing is now intentionally simple. Use the sections below to jump directly into activities,
-            reflections, the full library, and member spaces.
+            Landing is now intentionally simple. Bible Mastery Lab stays free from here, while other sections
+            require sign-in.
           </p>
           <p className="lead about">Current access: {roleLabel}</p>
         </section>
@@ -77,11 +83,20 @@ export default function Home({ authRole, canUseApps, canAccessArticles, onReques
 
           <div className="home-quick-grid">
             <QuickCard
+              title="Bible Mastery Lab"
+              description="Free scripture drills, motif testing, alphabet practice, and scripture lookup."
+              href="/apps/bible/index.html"
+              cta="Open Bible Mastery Lab"
+              locked={false}
+              onRequestSignIn={onRequestSignIn}
+            />
+
+            <QuickCard
               title="Activities"
               description="Open interactive external tools and standalone apps."
               to="/activities"
               cta="Open Activities"
-              locked={false}
+              locked={!canUseApps}
               onRequestSignIn={onRequestSignIn}
             />
 
@@ -90,7 +105,7 @@ export default function Home({ authRole, canUseApps, canAccessArticles, onReques
               description="Sacred media, daily liturgy, and journal thoughts."
               to="/reflections"
               cta="Open Reflections"
-              locked={false}
+              locked={!canUseApps}
               onRequestSignIn={onRequestSignIn}
             />
 
