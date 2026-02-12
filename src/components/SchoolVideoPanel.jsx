@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function slugify(value) {
   return String(value || "")
@@ -9,6 +10,7 @@ function slugify(value) {
 }
 
 export default function SchoolVideoPanel({ classroomName }) {
+  const navigate = useNavigate();
   const [roomInput, setRoomInput] = useState(() => {
     const base = slugify(classroomName) || "learning-circle";
     return `${base}-office-hours`;
@@ -18,6 +20,13 @@ export default function SchoolVideoPanel({ classroomName }) {
   const roomSlug = useMemo(() => slugify(roomInput) || "learning-circle-office-hours", [roomInput]);
   const iframeUrl = `https://meet.jit.si/${roomSlug}#config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.prejoinPageEnabled=false`;
   const roomUrl = `https://meet.jit.si/${roomSlug}`;
+
+  function openPopout() {
+    if (typeof window === "undefined") return;
+    const base = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+    const url = `${base}#/meet?room=${encodeURIComponent(roomSlug)}`;
+    window.open(url, "lds-meeting", "popup=yes,width=420,height=640,left=80,top=80");
+  }
 
   return (
     <section className="school-video-panel">
@@ -40,6 +49,12 @@ export default function SchoolVideoPanel({ classroomName }) {
           <div className="video-panel-actions">
             <button className="pill" type="button" onClick={() => setIsOpen((prev) => !prev)}>
               {isOpen ? "Hide video panel" : "Open video panel"}
+            </button>
+            <button className="pill" type="button" onClick={() => navigate(`/meet?room=${encodeURIComponent(roomSlug)}`)}>
+              Open full page
+            </button>
+            <button className="pill" type="button" onClick={openPopout}>
+              Pop out window
             </button>
             <a className="pill" href={roomUrl} target="_blank" rel="noreferrer">
               Open room in new tab

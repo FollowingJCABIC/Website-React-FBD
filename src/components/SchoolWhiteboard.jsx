@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ReactSketchCanvas } from "react-sketch-canvas";
 import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { useNavigate } from "react-router-dom";
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -51,6 +52,51 @@ function slugify(value) {
 
 function createPageKey(prefix = "page") {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 7)}`;
+}
+
+const ZOOM_LEVELS = [0.75, 1, 1.25, 1.5, 2, 2.5];
+
+function toNumber(value, fallback) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function clampNumber(value, min, max) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, value));
+}
+
+function unwrapCalc(value) {
+  const text = String(value || "").trim();
+  if (text.startsWith("calc(") && text.endsWith(")")) {
+    return text.slice(5, -1);
+  }
+  return text;
+}
+
+function zoomedCssLength(baseValue, zoom) {
+  const zoomFactor = clampNumber(toNumber(zoom, 1), 0.4, 4);
+  if (Math.abs(zoomFactor - 1) < 0.001) return baseValue;
+  const inner = unwrapCalc(baseValue) || "0px";
+  return `calc((${inner}) * ${zoomFactor})`;
+}
+
+function scaleCanvasPaths(paths, factor) {
+  const scale = toNumber(factor, 1);
+  if (!Array.isArray(paths) || !Number.isFinite(scale) || Math.abs(scale - 1) < 0.00001) {
+    return Array.isArray(paths) ? paths : [];
+  }
+
+  return paths.map((entry) => {
+    if (!entry || typeof entry !== "object" || !Array.isArray(entry.paths)) return entry;
+    return {
+      ...entry,
+      paths: entry.paths.map((point) => ({
+        x: toNumber(point?.x, 0) * scale,
+        y: toNumber(point?.y, 0) * scale,
+      })),
+    };
+  });
 }
 
 function normalizeWhiteboard(whiteboard) {
@@ -126,10 +172,19 @@ function emptyBoardTemplate() {
   });
 }
 
-export default function SchoolWhiteboard({ initialBoards }) {
+export default function SchoolWhiteboard({
+  initialBoards,
+  initialBoardId = "",
+  boardsLoading = false,
+  boardsError = "",
+  standalone = false,
+}) {
+  const navigate = useNavigate();
   const canvasRef = useRef(null);
   const isHydratingPathsRef = useRef(false);
   const activeBoardRef = useRef(emptyBoardTemplate());
+  const zoomRef = useRef(1);
+  const initialBoardIdRef = useRef("");
 
   const [boards, setBoards] = useState(() => sortBoards(initialBoards));
   const [activeBoardId, setActiveBoardId] = useState(() => sortBoards(initialBoards)[0]?.id || "");
@@ -147,7 +202,9 @@ export default function SchoolWhiteboard({ initialBoards }) {
   const [saving, setSaving] = useState(false);
   const [loadingBoard, setLoadingBoard] = useState(false);
   const [loadingPdf, setLoadingPdf] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(() => Boolean(standalone));
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [pdfFitMode, setPdfFitMode] = useState("fit");
 
   const [pageBackgrounds, setPageBackgrounds] = useState({});
   const [statusMessage, setStatusMessage] = useState("");
@@ -158,10 +215,26 @@ export default function SchoolWhiteboard({ initialBoards }) {
   }, [activeBoard]);
 
   useEffect(() => {
+    zoomRef.current = zoomLevel;
+  }, [zoomLevel]);
+
+  useEffect(() => {
+    if (!standalone) return;
+    setIsExpanded(true);
+  }, [standalone]);
+
+  useEffect(() => {
+    const nextId = String(initialBoardId || "").trim();
+    if (!nextId) return;
+    if (nextId === initialBoardIdRef.current) return;
+    initialBoardIdRef.current = nextId;
+    setActiveBoardId(nextId);
+  }, [initialBoardId]);
+
+  useEffect(() => {
     const next = sortBoards(initialBoards);
     setBoards(next);
-    const hasActiveBoard = next.some((entry) => entry.id === activeBoardId);
-    if (!hasActiveBoard) {
+    if (!activeBoardId && next.length) {
       setActiveBoardId(next[0]?.id || "");
     }
   }, [initialBoards, activeBoardId]);
@@ -183,21 +256,24 @@ export default function SchoolWhiteboard({ initialBoards }) {
     };
   }, [isExpanded]);
 
-  async function hydrateCanvas(paths) {
+  async function hydrateCanvas(paths, zoomOverride) {
     if (!canvasRef.current) return;
+
+    const zoom = Number.isFinite(zoomOverride) ? zoomOverride : zoomRef.current;
+    const scaledPaths = scaleCanvasPaths(Array.isArray(paths) ? paths : [], zoom);
 
     isHydratingPathsRef.current = true;
     canvasRef.current.resetCanvas();
 
-    if (Array.isArray(paths) && paths.length > 0) {
-      canvasRef.current.loadPaths(paths);
+    if (scaledPaths.length > 0) {
+      canvasRef.current.loadPaths(scaledPaths);
     }
 
     await new Promise((resolve) => window.setTimeout(resolve, 50));
     isHydratingPathsRef.current = false;
   }
 
-  async function exportCurrentPaths() {
+  async function exportCurrentPathsRaw() {
     if (!canvasRef.current) return [];
 
     try {
@@ -208,9 +284,15 @@ export default function SchoolWhiteboard({ initialBoards }) {
     }
   }
 
+  async function exportCurrentPathsCanonical() {
+    const raw = await exportCurrentPathsRaw();
+    const zoom = clampNumber(zoomRef.current, 0.4, 4);
+    return scaleCanvasPaths(raw, 1 / zoom);
+  }
+
   async function commitCurrentPageToState(baseBoard) {
     const board = normalizeWhiteboard(baseBoard || activeBoardRef.current);
-    const paths = await exportCurrentPaths();
+    const paths = await exportCurrentPathsCanonical();
     const pageDrawings = {
       ...board.pageDrawings,
       [board.activePageKey]: paths,
@@ -239,6 +321,54 @@ export default function SchoolWhiteboard({ initialBoards }) {
     setActiveBoard(nextBoard);
     setPathCount(nextPaths.length);
     await hydrateCanvas(nextPaths);
+  }
+
+  async function applyZoom(nextZoomValue) {
+    const nextZoom = clampNumber(toNumber(nextZoomValue, 1), ZOOM_LEVELS[0], ZOOM_LEVELS[ZOOM_LEVELS.length - 1]);
+    const previousZoom = clampNumber(zoomRef.current, 0.4, 4);
+    if (Math.abs(nextZoom - previousZoom) < 0.001) return;
+
+    if (!canvasRef.current || !activeBoardId) {
+      zoomRef.current = nextZoom;
+      setZoomLevel(nextZoom);
+      return;
+    }
+
+    const board = normalizeWhiteboard(activeBoardRef.current);
+    const raw = await exportCurrentPathsRaw();
+    const canonical = scaleCanvasPaths(raw, 1 / previousZoom);
+    const pageDrawings = {
+      ...board.pageDrawings,
+      [board.activePageKey]: canonical,
+    };
+    const nextBoard = {
+      ...board,
+      pageDrawings,
+      paths: canonical,
+    };
+
+    setActiveBoard(nextBoard);
+    setPathCount(canonical.length);
+
+    zoomRef.current = nextZoom;
+    setZoomLevel(nextZoom);
+    await hydrateCanvas(canonical, nextZoom);
+  }
+
+  function stepZoom(direction) {
+    const current = zoomLevel;
+    const idx = ZOOM_LEVELS.findIndex((value) => Math.abs(value - current) < 0.001);
+    const currentIdx = idx === -1 ? ZOOM_LEVELS.findIndex((value) => Math.abs(value - 1) < 0.001) : idx;
+    const nextIdx = clampNumber(currentIdx + direction, 0, ZOOM_LEVELS.length - 1);
+    applyZoom(ZOOM_LEVELS[nextIdx]);
+  }
+
+  function openFullPage() {
+    if (!activeBoardId) {
+      setErrorMessage("Select a whiteboard first.");
+      return;
+    }
+    navigate(`/whiteboard?id=${encodeURIComponent(activeBoardId)}`);
   }
 
   async function loadBoard(id) {
@@ -566,10 +696,14 @@ export default function SchoolWhiteboard({ initialBoards }) {
   );
 
   const currentPageBackground = activeBoard.activePageKey ? pageBackgrounds[activeBoard.activePageKey] || "" : "";
-  const canvasHeight = isExpanded ? "68vh" : "460px";
+  const baseCanvasHeight = isExpanded ? "clamp(420px, calc(100vh - 360px), 960px)" : "460px";
+  const zoomedCanvasWidth = zoomLevel === 1 ? "100%" : `calc(100% * ${zoomLevel})`;
+  const zoomedCanvasHeight = zoomedCssLength(baseCanvasHeight, zoomLevel);
+  const preserveBackgroundImageAspectRatio =
+    pdfFitMode === "fill" ? "xMidYMid slice" : pdfFitMode === "stretch" ? "none" : "xMidYMid meet";
 
   return (
-    <section className={`school-whiteboards ${isExpanded ? "is-expanded" : ""}`}>
+    <section className={`school-whiteboards ${isExpanded ? "is-expanded" : ""} ${standalone ? "is-standalone" : ""}`.trim()}>
       <div className="school-section-header">
         <p className="eyebrow">Whiteboard Studio</p>
         <h2>Sketch, save, annotate PDFs, and export</h2>
@@ -609,7 +743,9 @@ export default function SchoolWhiteboard({ initialBoards }) {
           </div>
 
           <div className="whiteboard-list">
-            {boards.length === 0 ? <p className="muted">No whiteboards yet.</p> : null}
+            {boardsLoading ? <p className="muted">Loading whiteboards...</p> : null}
+            {boardsError ? <p className="auth-error">{boardsError}</p> : null}
+            {boards.length === 0 && !boardsLoading ? <p className="muted">No whiteboards yet.</p> : null}
             {boards.map((entry) => (
               <button
                 key={entry.id}
@@ -696,6 +832,56 @@ export default function SchoolWhiteboard({ initialBoards }) {
             </div>
 
             <div className="whiteboard-toolbar-group">
+              <label className="filter-label" htmlFor="whiteboard-zoom">
+                Zoom
+              </label>
+              <button
+                className="pill"
+                type="button"
+                onClick={() => stepZoom(-1)}
+                disabled={zoomLevel <= ZOOM_LEVELS[0]}
+                aria-label="Zoom out"
+              >
+                -
+              </button>
+              <select id="whiteboard-zoom" value={String(zoomLevel)} onChange={(event) => applyZoom(Number(event.target.value))}>
+                {ZOOM_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {Math.round(level * 100)}%
+                  </option>
+                ))}
+              </select>
+              <button
+                className="pill"
+                type="button"
+                onClick={() => stepZoom(1)}
+                disabled={zoomLevel >= ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
+                aria-label="Zoom in"
+              >
+                +
+              </button>
+              <button
+                className="pill"
+                type="button"
+                onClick={() => applyZoom(1)}
+                disabled={Math.abs(zoomLevel - 1) < 0.001}
+              >
+                Fit
+              </button>
+            </div>
+
+            <div className="whiteboard-toolbar-group">
+              <label className="filter-label" htmlFor="whiteboard-pdf-fit">
+                PDF fit
+              </label>
+              <select id="whiteboard-pdf-fit" value={pdfFitMode} onChange={(event) => setPdfFitMode(event.target.value)}>
+                <option value="fit">Fit</option>
+                <option value="fill">Fill</option>
+                <option value="stretch">Stretch</option>
+              </select>
+            </div>
+
+            <div className="whiteboard-toolbar-group">
               <button className="pill" type="button" onClick={() => canvasRef.current?.undo()}>
                 Undo
               </button>
@@ -707,22 +893,33 @@ export default function SchoolWhiteboard({ initialBoards }) {
               </button>
             </div>
 
-            <div className="whiteboard-toolbar-group">
-              <button className="pill" type="button" onClick={() => setIsExpanded((prev) => !prev)}>
-                {isExpanded ? "Exit large mode" : "Open large mode"}
-              </button>
-            </div>
+            {standalone ? (
+              <div className="whiteboard-toolbar-group">
+                <button className="pill" type="button" onClick={() => navigate("/school")}>
+                  Back to School
+                </button>
+              </div>
+            ) : (
+              <div className="whiteboard-toolbar-group">
+                <button className="pill" type="button" onClick={openFullPage} disabled={!activeBoardId}>
+                  Open full page
+                </button>
+                <button className="pill" type="button" onClick={() => setIsExpanded((prev) => !prev)}>
+                  {isExpanded ? "Exit large mode" : "Open large mode"}
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="whiteboard-canvas-wrap">
+          <div className="whiteboard-canvas-wrap" style={{ height: baseCanvasHeight }}>
             <ReactSketchCanvas
               ref={canvasRef}
               className="whiteboard-canvas"
-              width="100%"
-              height={canvasHeight}
+              width={zoomedCanvasWidth}
+              height={zoomedCanvasHeight}
               canvasColor="#fff"
               backgroundImage={currentPageBackground}
-              preserveBackgroundImageAspectRatio="xMidYMid meet"
+              preserveBackgroundImageAspectRatio={preserveBackgroundImageAspectRatio}
               exportWithBackgroundImage
               strokeColor={strokeColor}
               strokeWidth={strokeWidth}

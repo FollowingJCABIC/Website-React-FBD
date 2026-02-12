@@ -7,6 +7,8 @@ import Library from "./pages/Library.jsx";
 import Art from "./pages/Art.jsx";
 import YouTube from "./pages/YouTube.jsx";
 import School from "./pages/School.jsx";
+import Whiteboard from "./pages/Whiteboard.jsx";
+import Meet from "./pages/Meet.jsx";
 import FullAccessAssistant from "./components/FullAccessAssistant.jsx";
 import { SACRED_AUDIO, SACRED_IMAGES } from "./content/sacred.js";
 
@@ -48,6 +50,8 @@ const VIEW_LABELS = {
   "/art": "Art Hall",
   "/youtube": "YouTube",
   "/school": "School",
+  "/whiteboard": "Whiteboard",
+  "/meet": "Meeting",
 };
 
 function AppShell() {
@@ -616,6 +620,8 @@ function AppShell() {
           />
           <Route path="/youtube" element={canUseMemberPages ? <YouTube /> : <Navigate to="/" replace />} />
           <Route path="/school" element={canUseMemberPages ? <School authRole={authRole} /> : <Navigate to="/" replace />} />
+          <Route path="/whiteboard" element={canUseMemberPages ? <Whiteboard /> : <Navigate to="/" replace />} />
+          <Route path="/meet" element={canUseMemberPages ? <Meet /> : <Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

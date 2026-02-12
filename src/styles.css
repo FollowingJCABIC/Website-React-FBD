@@ -1372,6 +1372,11 @@ select {
   background: rgba(10, 3, 6, 0.98);
 }
 
+.school-whiteboards.is-standalone.is-expanded {
+  inset: 0;
+  border-radius: 0;
+}
+
 .school-whiteboards.is-expanded .whiteboard-layout {
   min-height: calc(100vh - 130px);
 }
@@ -1468,7 +1473,8 @@ select {
   border-radius: 12px;
   border: 1px solid rgba(255, 47, 61, 0.24);
   background: #ffffff;
-  overflow: hidden;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .whiteboard-canvas {
@@ -1570,6 +1576,84 @@ select {
   margin: 0;
   color: var(--ink-soft);
   line-height: 1.6;
+}
+
+.immersive-page {
+  position: fixed;
+  inset: 0;
+  z-index: 170;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+  padding: 18px;
+  background: rgba(10, 3, 6, 0.98);
+  overflow: auto;
+}
+
+.immersive-topbar {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 47, 61, 0.28);
+  background: rgba(20, 7, 11, 0.9);
+  padding: 12px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.immersive-topbar-title {
+  display: grid;
+  gap: 2px;
+}
+
+.immersive-topbar-title p {
+  margin: 0;
+}
+
+.immersive-body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(240px, 340px) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.immersive-controls {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 47, 61, 0.28);
+  background: rgba(20, 7, 11, 0.9);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.immersive-controls input {
+  border-radius: 12px;
+  border: 1px solid var(--stroke);
+  padding: 10px 12px;
+  background: rgba(11, 2, 5, 0.94);
+  color: var(--ink);
+}
+
+.immersive-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.immersive-frame-wrap {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 47, 61, 0.24);
+  background: rgba(20, 7, 11, 0.9);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.immersive-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 .full-assistant {
@@ -1704,6 +1788,10 @@ select {
   }
 
   .video-panel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .immersive-body {
     grid-template-columns: 1fr;
   }
 
