@@ -45,7 +45,7 @@ The School whiteboard is built with the free `react-sketch-canvas` library and s
 - export whole board as JSON path data
 
 The School page also includes a built-in compact video panel using `meet.jit.si` for 1:1 or small-group sessions.
-The Home page includes a full-access Site Guide Assistant that answers navigation/content questions.
+Full-access users can open the Site Guide Assistant as a floating pop-up on most routes, and inline in `#/library`.
 
 ## Auth Environment Variables
 

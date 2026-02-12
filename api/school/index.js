@@ -30,13 +30,13 @@ function buildSiteSnapshot() {
     {
       path: "#/activities",
       name: "Activities",
-      access: "public",
+      access: "visitor/full",
       purpose: "External activities and app links.",
     },
     {
       path: "#/reflections",
       name: "Reflections",
-      access: "public",
+      access: "visitor/full",
       purpose: "Sacred media, liturgy notes, and daily thoughts.",
     },
     {
