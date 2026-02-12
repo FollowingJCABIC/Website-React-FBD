@@ -52,6 +52,7 @@ function AppShell() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
+  const [miniPlayerPinned, setMiniPlayerPinned] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
 
   const [trackId, setTrackId] = useState(SACRED_AUDIO[0]?.id ?? "");
@@ -241,6 +242,7 @@ function AppShell() {
     setAuthPassword("");
     setAuthError("");
     setAssistantOpen(false);
+    setMiniPlayerPinned(false);
     setEntries([]);
     setPdfLibrary(DEFAULT_PDF_LIBRARY);
     setArticlesError("");
@@ -504,32 +506,46 @@ function AppShell() {
         </div>
       ) : null}
 
-      <aside className="mini-player" aria-label="Now playing">
-        <div className={`waveform mini ${isPlaying ? "active" : ""}`}>
-          {Array.from({ length: 6 }).map((_, idx) => (
-            <span key={idx} />
-          ))}
-        </div>
-
-        <div className="mini-track">
-          <p className="filter-label">Now playing</p>
-          <p>{activeTrack?.composer}</p>
-          <p className="muted">{activeTrack?.title}</p>
-        </div>
-
-        <div className="mini-controls">
-          <button className="pill" type="button" onClick={togglePlayback}>
-            {isPlaying ? "Pause" : "Play"}
+      <div className={`mini-player-shell ${miniPlayerPinned ? "is-open" : ""}`}>
+        <aside id="mini-player-panel" className="mini-player" aria-label="Now playing">
+          <button
+            className="mini-player-handle"
+            type="button"
+            title={miniPlayerPinned ? "Hide music player" : "Show music player"}
+            aria-label={miniPlayerPinned ? "Hide music player" : "Show music player"}
+            aria-expanded={miniPlayerPinned}
+            aria-controls="mini-player-panel"
+            onClick={() => setMiniPlayerPinned((prev) => !prev)}
+          >
+            {miniPlayerPinned ? "×" : "♫"}
           </button>
-          <select value={trackId} onChange={(event) => setTrackId(event.target.value)}>
-            {SACRED_AUDIO.map((track) => (
-              <option key={track.id} value={track.id}>
-                {track.composer} - {track.title}
-              </option>
+
+          <div className={`waveform mini ${isPlaying ? "active" : ""}`}>
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <span key={idx} />
             ))}
-          </select>
-        </div>
-      </aside>
+          </div>
+
+          <div className="mini-track">
+            <p className="filter-label">Now playing</p>
+            <p>{activeTrack?.composer}</p>
+            <p className="muted">{activeTrack?.title}</p>
+          </div>
+
+          <div className="mini-controls">
+            <button className="pill" type="button" onClick={togglePlayback}>
+              {isPlaying ? "Pause" : "Play"}
+            </button>
+            <select value={trackId} onChange={(event) => setTrackId(event.target.value)}>
+              {SACRED_AUDIO.map((track) => (
+                <option key={track.id} value={track.id}>
+                  {track.composer} - {track.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        </aside>
+      </div>
 
       <audio
         ref={audioRef}
