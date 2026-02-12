@@ -66,11 +66,16 @@ function AppShell() {
   const [miniPlayerPinned, setMiniPlayerPinned] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [bannerHiddenByView, setBannerHiddenByView] = useState({});
+  const [brownNoiseEnabled, setBrownNoiseEnabled] = useState(false);
+  const [brownNoiseLevel, setBrownNoiseLevel] = useState(0.2);
 
   const [trackId, setTrackId] = useState(SACRED_AUDIO[0]?.id ?? "");
   const [isLooping, setIsLooping] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
+  const brownNoiseContextRef = useRef(null);
+  const brownNoiseSourceRef = useRef(null);
+  const brownNoiseGainRef = useRef(null);
 
   const canUseApps = authRole === ROLE_VISITOR || authRole === ROLE_FULL;
   const canUseMemberPages = canUseApps;
@@ -103,9 +108,102 @@ function AppShell() {
     play();
   }
 
+  function buildBrownNoiseBuffer(audioContext, durationSeconds = 2) {
+    const sampleCount = Math.max(1, Math.floor(audioContext.sampleRate * durationSeconds));
+    const buffer = audioContext.createBuffer(1, sampleCount, audioContext.sampleRate);
+    const channel = buffer.getChannelData(0);
+    let lastOut = 0;
+
+    for (let idx = 0; idx < sampleCount; idx += 1) {
+      const white = Math.random() * 2 - 1;
+      lastOut = (lastOut + 0.02 * white) / 1.02;
+      channel[idx] = lastOut * 3.5;
+    }
+
+    return buffer;
+  }
+
+  async function ensureBrownNoiseEngine() {
+    if (typeof window === "undefined") return false;
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) return false;
+
+    if (!brownNoiseContextRef.current) {
+      const context = new AudioContextCtor();
+      const source = context.createBufferSource();
+      const gain = context.createGain();
+      source.buffer = buildBrownNoiseBuffer(context);
+      source.loop = true;
+      gain.gain.value = 0;
+      source.connect(gain);
+      gain.connect(context.destination);
+      source.start(0);
+
+      brownNoiseContextRef.current = context;
+      brownNoiseSourceRef.current = source;
+      brownNoiseGainRef.current = gain;
+    }
+
+    if (brownNoiseContextRef.current.state === "suspended") {
+      await brownNoiseContextRef.current.resume();
+    }
+
+    return true;
+  }
+
+  function applyBrownNoiseGain(enabled, level) {
+    const context = brownNoiseContextRef.current;
+    const gainNode = brownNoiseGainRef.current;
+    if (!context || !gainNode) return;
+    const target = enabled ? level : 0;
+    gainNode.gain.setTargetAtTime(target, context.currentTime, 0.05);
+  }
+
+  async function toggleBrownNoise() {
+    const nextEnabled = !brownNoiseEnabled;
+    if (nextEnabled) {
+      const ready = await ensureBrownNoiseEngine();
+      if (!ready) return;
+    }
+    setBrownNoiseEnabled(nextEnabled);
+    applyBrownNoiseGain(nextEnabled, brownNoiseLevel);
+  }
+
+  function onBrownNoiseLevelChange(event) {
+    const nextLevel = Number(event.target.value);
+    setBrownNoiseLevel(nextLevel);
+    applyBrownNoiseGain(brownNoiseEnabled, nextLevel);
+  }
+
   useEffect(() => {
     if (isPlaying) play();
   }, [trackId]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        brownNoiseSourceRef.current?.stop();
+      } catch (_error) {
+        // Source may already be stopped.
+      }
+      try {
+        brownNoiseSourceRef.current?.disconnect();
+      } catch (_error) {
+        // Ignore disconnect errors during cleanup.
+      }
+      try {
+        brownNoiseGainRef.current?.disconnect();
+      } catch (_error) {
+        // Ignore disconnect errors during cleanup.
+      }
+      if (brownNoiseContextRef.current) {
+        brownNoiseContextRef.current.close().catch(() => {});
+      }
+      brownNoiseContextRef.current = null;
+      brownNoiseSourceRef.current = null;
+      brownNoiseGainRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (!showFloatingAssistant) {
@@ -279,6 +377,8 @@ function AppShell() {
     setAuthError("");
     setAssistantOpen(false);
     setMiniPlayerPinned(false);
+    setBrownNoiseEnabled(false);
+    applyBrownNoiseGain(false, brownNoiseLevel);
     setEntries([]);
     setPdfLibrary(DEFAULT_PDF_LIBRARY);
     setArticlesError("");
@@ -604,6 +704,22 @@ function AppShell() {
                 </option>
               ))}
             </select>
+            <button className={`pill ${brownNoiseEnabled ? "active" : ""}`} type="button" onClick={toggleBrownNoise}>
+              {brownNoiseEnabled ? "Brown noise on" : "Brown noise off"}
+            </button>
+            <label className="brown-noise-slider" htmlFor="brown-noise-level">
+              <span className="filter-label">Brown noise level</span>
+              <input
+                id="brown-noise-level"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={brownNoiseLevel}
+                onChange={onBrownNoiseLevelChange}
+              />
+              <span className="muted">{Math.round(brownNoiseLevel * 100)}%</span>
+            </label>
           </div>
         </aside>
       </div>

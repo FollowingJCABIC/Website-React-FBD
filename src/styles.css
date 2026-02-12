@@ -947,6 +947,16 @@ select {
   color: var(--ink);
 }
 
+.brown-noise-slider {
+  display: grid;
+  gap: 6px;
+}
+
+.brown-noise-slider input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
 .audio-element {
   display: none;
 }
