@@ -670,15 +670,18 @@ function AppShell() {
       <div className={`mini-player-shell ${miniPlayerPinned ? "is-open" : ""}`}>
         <aside id="mini-player-panel" className="mini-player" aria-label="Now playing">
           <button
-            className="mini-player-handle"
+            className={`mini-player-handle ${miniPlayerPinned ? "is-pinned" : ""}`}
             type="button"
-            title={miniPlayerPinned ? "Hide music player" : "Show music player"}
-            aria-label={miniPlayerPinned ? "Hide music player" : "Show music player"}
+            title={miniPlayerPinned ? "Collapse music panel" : "Expand music panel"}
+            aria-label={miniPlayerPinned ? "Collapse music panel" : "Expand music panel"}
             aria-expanded={miniPlayerPinned}
             aria-controls="mini-player-panel"
             onClick={() => setMiniPlayerPinned((prev) => !prev)}
           >
-            {miniPlayerPinned ? "×" : "♫"}
+            <span className="mini-player-handle-icon" aria-hidden="true">
+              {miniPlayerPinned ? "◂" : "♫"}
+            </span>
+            <span className="mini-player-handle-label">{miniPlayerPinned ? "Collapse" : "Music"}</span>
           </button>
 
           <div className={`waveform mini ${isPlaying ? "active" : ""}`}>
