@@ -3,6 +3,7 @@ import { HashRouter, NavLink, Navigate, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home.jsx";
 import Art from "./pages/Art.jsx";
 import YouTube from "./pages/YouTube.jsx";
+import School from "./pages/School.jsx";
 import { SACRED_AUDIO, SACRED_IMAGES } from "./content/sacred.js";
 
 const CATEGORY_LABELS = {
@@ -270,6 +271,13 @@ function AppShell() {
           >
             YouTube
           </NavLink>
+          <NavLink
+            to="/school"
+            onClick={requireMemberAccess}
+            className={({ isActive }) => `${isActive ? "active" : ""} ${canUseMemberPages ? "" : "locked-nav"}`.trim()}
+          >
+            School
+          </NavLink>
         </nav>
 
         <div className="auth-bar">
@@ -300,7 +308,10 @@ function AppShell() {
                   <button className="pill auth-submit" type="submit">
                     Unlock
                   </button>
-                  <p className="auth-hint">Visitor unlocks app/member pages. Full unlocks article library.</p>
+                  <p className="auth-hint">
+                    Visitor unlocks app/member pages, including School. Full unlocks article library
+                    and School management tools.
+                  </p>
                   {authError ? <p className="auth-error">{authError}</p> : null}
                 </form>
               ) : null}
@@ -383,6 +394,7 @@ function AppShell() {
             element={canUseMemberPages ? <Art entries={entries} pdfLibrary={pdfLibrary} canAccessArticles={canAccessArticles} /> : <Navigate to="/" replace />}
           />
           <Route path="/youtube" element={canUseMemberPages ? <YouTube /> : <Navigate to="/" replace />} />
+          <Route path="/school" element={canUseMemberPages ? <School authRole={authRole} /> : <Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
