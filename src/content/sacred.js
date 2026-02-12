@@ -27,6 +27,14 @@ export const SACRED_AUDIO = [
       "https://commons.wikimedia.org/wiki/File:Bach,_Goldberg_Variations,_Aria_(Musopen_version).ogg",
   },
   {
+    id: "bach-siciliano",
+    title: "Flute Sonata in E Major (BWV 1035): Siciliano",
+    composer: "J.S. Bach",
+    src: "https://upload.wikimedia.org/wikipedia/commons/6/68/Bach_-_Flute_Sonata_Emaj_-_3._Siciliano.ogg",
+    creditUrl:
+      "https://commons.wikimedia.org/wiki/File:Bach_-_Flute_Sonata_Emaj_-_3._Siciliano.ogg",
+  },
+  {
     id: "beethoven-moonlight",
     title: "Piano Sonata No. 14 \"Moonlight\" - Adagio",
     composer: "L. van Beethoven",
