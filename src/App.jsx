@@ -409,6 +409,20 @@ function AppShell() {
     }));
   }
 
+  function renderMemberRoute(element) {
+    if (authLoading) {
+      return (
+        <section className="hero">
+          <p className="eyebrow">Checking session</p>
+          <h1>Loading...</h1>
+          <p className="lead">Verifying your login before opening this page.</p>
+        </section>
+      );
+    }
+
+    return canUseMemberPages ? element : <Navigate to="/" replace />;
+  }
+
   return (
     <div className={`app ${authRole === ROLE_NONE ? "is-locked" : "is-authenticated"}`}>
       <div className="orb orb-one" />
@@ -568,7 +582,7 @@ function AppShell() {
           />
           <Route
             path="/activities"
-            element={canUseMemberPages ? (
+            element={renderMemberRoute(
               <Activities
                 canUseApps={canUseApps}
                 onRequestSignIn={() => {
@@ -576,11 +590,11 @@ function AppShell() {
                   setAuthPanelOpen(true);
                 }}
               />
-            ) : <Navigate to="/" replace />}
+            )}
           />
           <Route
             path="/reflections"
-            element={canUseMemberPages ? (
+            element={renderMemberRoute(
               <Reflections
                 entries={entries}
                 meditations={meditations}
@@ -594,7 +608,7 @@ function AppShell() {
                 onTogglePlayback={togglePlayback}
                 canAccessArticles={canAccessArticles}
               />
-            ) : <Navigate to="/" replace />}
+            )}
           />
           <Route
             path="/library"
@@ -616,12 +630,12 @@ function AppShell() {
           />
           <Route
             path="/art"
-            element={canUseMemberPages ? <Art entries={entries} pdfLibrary={pdfLibrary} canAccessArticles={canAccessArticles} /> : <Navigate to="/" replace />}
+            element={renderMemberRoute(<Art entries={entries} pdfLibrary={pdfLibrary} canAccessArticles={canAccessArticles} />)}
           />
-          <Route path="/youtube" element={canUseMemberPages ? <YouTube /> : <Navigate to="/" replace />} />
-          <Route path="/school" element={canUseMemberPages ? <School authRole={authRole} /> : <Navigate to="/" replace />} />
-          <Route path="/whiteboard" element={canUseMemberPages ? <Whiteboard /> : <Navigate to="/" replace />} />
-          <Route path="/meet" element={canUseMemberPages ? <Meet /> : <Navigate to="/" replace />} />
+          <Route path="/youtube" element={renderMemberRoute(<YouTube />)} />
+          <Route path="/school" element={renderMemberRoute(<School authRole={authRole} />)} />
+          <Route path="/whiteboard" element={renderMemberRoute(<Whiteboard />)} />
+          <Route path="/meet" element={renderMemberRoute(<Meet />)} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
