@@ -703,7 +703,7 @@ export default function SchoolWhiteboard({
   );
 
   const currentPageBackground = activeBoard.activePageKey ? pageBackgrounds[activeBoard.activePageKey] || "" : "";
-  const baseCanvasHeight = isExpanded ? "clamp(420px, calc(100vh - 360px), 960px)" : "460px";
+  const baseCanvasHeight = isExpanded ? "clamp(320px, calc(100vh - 240px), 1600px)" : "460px";
   const zoomedCanvasWidth = zoomLevel === 1 ? "100%" : `calc(100% * ${zoomLevel})`;
   const zoomedCanvasHeight = zoomedCssLength(baseCanvasHeight, zoomLevel);
   const preserveBackgroundImageAspectRatio =
@@ -909,10 +909,7 @@ export default function SchoolWhiteboard({
             ) : (
               <div className="whiteboard-toolbar-group">
                 <button className="pill" type="button" onClick={openFullPage}>
-                  Open full page
-                </button>
-                <button className="pill" type="button" onClick={() => setIsExpanded((prev) => !prev)}>
-                  {isExpanded ? "Exit large mode" : "Open large mode"}
+                  Full screen whiteboard
                 </button>
               </div>
             )}
