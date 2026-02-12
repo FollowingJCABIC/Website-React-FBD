@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bible Testing Game</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="bg-shape bg-shape-a"></div>
+    <div class="bg-shape bg-shape-b"></div>
+    <div class="app-shell">
+      <header class="hero fade-in">
+        <p class="eyebrow">Bible Mastery Lab</p>
+        <h1>Cross-Reference & Motif Testing Game</h1>
+        <p class="hero-copy">
+          Built for challenge: layered themes, canon links, motif tracking, timed pressure, and no ads.
+        </p>
+        <div class="hero-quick-actions">
+          <button id="alphabet-shortcut" class="btn ghost" type="button">
+            Greek + Hebrew Alphabet Trainer
+          </button>
+        </div>
+        <div class="sound-control" aria-label="Temple ambience controls">
+          <label>
+            <span>Ambience</span>
+            <select id="music-track">
+              <option value="none" selected>Off</option>
+              <option value="chant">Gregorian Chant</option>
+              <option value="bach">Bach Prelude</option>
+              <option value="counterpoint">Counterpoint Synth</option>
+            </select>
+          </label>
+          <label>
+            <span>Volume</span>
+            <input id="music-volume" type="range" min="0" max="1" step="0.05" value="0.25" />
+          </label>
+          <button id="music-toggle" class="btn ghost" type="button">Play</button>
+          <span id="music-status" class="small-note">Ambience off</span>
+          <audio id="ambient-audio" preload="none" loop></audio>
+        </div>
+        <p class="small-note">
+          Audio sources: CC-licensed recordings from Wikimedia Commons.
+        </p>
+      </header>
+
+      <main>
+        <section id="setup-screen" class="card fade-in stagger-1">
+          <h2>Session Setup</h2>
+          <form id="setup-form" class="setup-grid" autocomplete="off">
+            <label>
+              <span>Mode</span>
+              <select id="mode" name="mode">
+                <option value="adaptive">Adaptive Exam</option>
+                <option value="crossref">Cross-Reference Focus</option>
+                <option value="motif">Motif Drill</option>
+                <option value="explain">Explain-Why Mode</option>
+                <option value="book">Book Exam</option>
+                <option value="alphabet">Greek + Hebrew Alphabet Drill</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Book Scope (Book Exam)</span>
+              <select id="book-scope" name="book-scope">
+                <option value="all" selected>Any Book</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Testament Scope</span>
+              <select id="testament" name="testament">
+                <option value="all">Whole Bible</option>
+                <option value="OT">Old Testament</option>
+                <option value="NT">New Testament</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Questions</span>
+              <select id="length" name="length">
+                <option value="15">15</option>
+                <option value="25" selected>25</option>
+                <option value="40">40</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Seconds Per Question</span>
+              <select id="seconds" name="seconds">
+                <option value="20">20 sec</option>
+                <option value="30" selected>30 sec</option>
+                <option value="45">45 sec</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Starting Difficulty</span>
+              <select id="difficulty" name="difficulty">
+                <option value="1">1 - Warmup</option>
+                <option value="2" selected>2 - Solid</option>
+                <option value="3">3 - Strong</option>
+                <option value="4">4 - Advanced</option>
+                <option value="5">5 - Expert</option>
+              </select>
+            </label>
+
+            <button id="start-btn" class="btn primary" type="submit">Start Test</button>
+          </form>
+          <p id="difficulty-note" class="small-note"></p>
+          <p id="mode-description" class="mode-description"></p>
+          <p class="small-note">
+            Tip: Motif Drill emphasizes questions like "where else do we see this theme?" including multi-answer cross references.
+          </p>
+        </section>
+
+        <section id="quiz-screen" class="card hidden" aria-live="polite">
+          <div class="quiz-top">
+            <div>
+              <p id="session-label" class="eyebrow">Session</p>
+              <h2 id="question-number">Question 1</h2>
+            </div>
+            <div class="timer-wrap">
+              <span>Time Left</span>
+              <strong id="timer">30s</strong>
+            </div>
+          </div>
+
+          <div class="progress-wrap">
+            <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <div class="progress-meta">
+              <span id="progress-text">0 / 0</span>
+              <span id="live-score">Score: 0</span>
+            </div>
+          </div>
+
+          <div id="question-card" class="question-card">
+            <div class="question-tags" id="question-tags"></div>
+            <p id="question-prompt" class="question-prompt"></p>
+            <div id="answer-area"></div>
+          </div>
+
+          <p id="status-message" class="status-message"></p>
+
+          <div class="action-row">
+            <button id="submit-btn" class="btn primary" type="button">Submit Answer</button>
+            <button id="skip-btn" class="btn ghost" type="button">Skip</button>
+          </div>
+
+          <div id="feedback-box" class="feedback-box hidden">
+            <p id="feedback-result" class="feedback-result"></p>
+            <p id="feedback-answer"></p>
+            <p id="feedback-why"></p>
+            <p id="feedback-reference" class="reference"></p>
+            <p id="feedback-explanation"></p>
+            <div id="theme-chain" class="theme-chain hidden">
+              <p class="theme-chain-title">Theme Chain Bonus</p>
+              <p id="theme-chain-prompt"></p>
+              <div id="theme-chain-options" class="theme-chain-options"></div>
+              <p id="theme-chain-result" class="small-note"></p>
+            </div>
+          </div>
+        </section>
+
+        <section id="results-screen" class="card hidden">
+          <h2>Session Results</h2>
+          <div class="results-grid">
+            <div class="stat">
+              <span>Score</span>
+              <strong id="final-score">0</strong>
+            </div>
+            <div class="stat">
+              <span>Accuracy</span>
+              <strong id="accuracy">0%</strong>
+            </div>
+            <div class="stat">
+              <span>Longest Streak</span>
+              <strong id="streak">0</strong>
+            </div>
+            <div class="stat">
+              <span>Mode High Score</span>
+              <strong id="high-score">0</strong>
+            </div>
+          </div>
+
+          <h3>Review Missed Questions</h3>
+          <div id="missed-list" class="missed-list"></div>
+
+          <div class="action-row">
+            <button id="retake-missed-btn" class="btn" type="button">Retake Missed</button>
+            <button id="new-session-btn" class="btn primary" type="button">New Session</button>
+          </div>
+        </section>
+
+        <section id="bible-reader-screen" class="card fade-in stagger-1">
+          <p class="eyebrow">Embedded Bible</p>
+          <h2>Scripture Lookup</h2>
+          <p class="small-note">Search by verse or range (example: <code>John 3:16-18</code>).</p>
+          <form id="scripture-form" class="reader-form" autocomplete="off">
+            <label>
+              <span>Reference</span>
+              <input id="scripture-query" type="text" placeholder="Genesis 1:1-5" value="John 3:16-18" />
+            </label>
+            <label>
+              <span>Translation</span>
+              <select id="scripture-translation" name="scripture-translation">
+                <option value="web" selected>English - WEB</option>
+                <option value="kjv">English - KJV</option>
+                <option value="sse">Spanish - Reina Valera (RV1865)</option>
+                <option value="giovanni">Italian - Giovanni Diodati</option>
+                <option value="ls1910">French - Louis Segond 1910</option>
+              </select>
+            </label>
+            <button class="btn primary" type="submit">Lookup</button>
+          </form>
+          <div class="scripture-audio-row">
+            <button id="scripture-read-btn" class="btn ghost" type="button" disabled>Read Aloud</button>
+            <button id="scripture-stop-btn" class="btn ghost" type="button" disabled>Stop</button>
+            <label class="scripture-speed-control">
+              <span>Read Speed</span>
+              <input id="scripture-speed" type="range" min="0.1" max="1.6" step="0.05" value="0.75" />
+              <strong id="scripture-speed-value">0.75x</strong>
+            </label>
+          </div>
+          <p id="scripture-status" class="scripture-status"></p>
+          <div id="scripture-viewer" class="scripture-viewer">
+            <p class="placeholder">Enter a reference above and press Lookup.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
