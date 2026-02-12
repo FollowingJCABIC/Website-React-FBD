@@ -1527,6 +1527,46 @@ select {
   resize: vertical;
 }
 
+.assistant-float-root {
+  position: fixed;
+  right: 20px;
+  bottom: 112px;
+  z-index: 40;
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.assistant-fab {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
+}
+
+.assistant-float-panel {
+  width: min(420px, calc(100vw - 24px));
+  max-height: min(76vh, 760px);
+  overflow: auto;
+  border-radius: 18px;
+  border: 1px solid var(--stroke);
+  background: rgba(8, 2, 4, 0.96);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+.assistant-float-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.assistant-float-panel .full-assistant {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+}
+
 @media (max-width: 960px) {
   .school-layout {
     grid-template-columns: 1fr;
@@ -1546,5 +1586,21 @@ select {
 
   .video-panel-grid {
     grid-template-columns: 1fr;
+  }
+
+  .assistant-float-root {
+    right: 10px;
+    left: 10px;
+    bottom: 96px;
+    justify-items: stretch;
+  }
+
+  .assistant-fab {
+    justify-self: end;
+  }
+
+  .assistant-float-panel {
+    width: 100%;
+    max-height: 72vh;
   }
 }

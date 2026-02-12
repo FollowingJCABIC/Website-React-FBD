@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { HashRouter, NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home.jsx";
 import Activities from "./pages/Activities.jsx";
 import Reflections from "./pages/Reflections.jsx";
@@ -7,6 +7,7 @@ import Library from "./pages/Library.jsx";
 import Art from "./pages/Art.jsx";
 import YouTube from "./pages/YouTube.jsx";
 import School from "./pages/School.jsx";
+import FullAccessAssistant from "./components/FullAccessAssistant.jsx";
 import { SACRED_AUDIO, SACRED_IMAGES } from "./content/sacred.js";
 
 const CATEGORY_LABELS = {
@@ -39,6 +40,7 @@ const DEFAULT_PDF_LIBRARY = {
 };
 
 function AppShell() {
+  const location = useLocation();
   const [entries, setEntries] = useState([]);
   const [meditations, setMeditations] = useState([]);
   const [pdfLibrary, setPdfLibrary] = useState(DEFAULT_PDF_LIBRARY);
@@ -50,6 +52,7 @@ function AppShell() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
+  const [assistantOpen, setAssistantOpen] = useState(false);
 
   const [trackId, setTrackId] = useState(SACRED_AUDIO[0]?.id ?? "");
   const [isLooping, setIsLooping] = useState(true);
@@ -59,6 +62,7 @@ function AppShell() {
   const canUseApps = authRole === ROLE_VISITOR || authRole === ROLE_FULL;
   const canUseMemberPages = canUseApps;
   const canAccessArticles = authRole === ROLE_FULL;
+  const showFloatingAssistant = authRole === ROLE_FULL && location.pathname !== "/library";
 
   const activeTrack = SACRED_AUDIO.find((track) => track.id === trackId) || SACRED_AUDIO[0];
 
@@ -86,6 +90,12 @@ function AppShell() {
   useEffect(() => {
     if (isPlaying) play();
   }, [trackId]);
+
+  useEffect(() => {
+    if (!showFloatingAssistant) {
+      setAssistantOpen(false);
+    }
+  }, [showFloatingAssistant]);
 
   useEffect(() => {
     let cancelled = false;
@@ -230,6 +240,7 @@ function AppShell() {
     setAuthEmail("");
     setAuthPassword("");
     setAuthError("");
+    setAssistantOpen(false);
     setEntries([]);
     setPdfLibrary(DEFAULT_PDF_LIBRARY);
     setArticlesError("");
@@ -463,6 +474,35 @@ function AppShell() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
+      {showFloatingAssistant ? (
+        <div className="assistant-float-root">
+          {assistantOpen ? (
+            <section
+              id="floating-assistant-panel"
+              className="assistant-float-panel"
+              aria-label="Floating site guide assistant"
+            >
+              <div className="assistant-float-toolbar">
+                <p className="filter-label">Site Guide</p>
+                <button className="pill" type="button" onClick={() => setAssistantOpen(false)}>
+                  Close
+                </button>
+              </div>
+              <FullAccessAssistant />
+            </section>
+          ) : null}
+          <button
+            className="pill assistant-fab"
+            type="button"
+            onClick={() => setAssistantOpen((prev) => !prev)}
+            aria-expanded={assistantOpen}
+            aria-controls="floating-assistant-panel"
+          >
+            {assistantOpen ? "Hide assistant" : "Open assistant"}
+          </button>
+        </div>
+      ) : null}
 
       <aside className="mini-player" aria-label="Now playing">
         <div className={`waveform mini ${isPlaying ? "active" : ""}`}>
