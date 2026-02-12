@@ -1770,6 +1770,62 @@ select {
   padding: 0;
 }
 
+.gpt-launcher-shell {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 73;
+}
+
+.gpt-launcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 47, 61, 0.22);
+  background: rgba(11, 2, 5, 0.68);
+  color: var(--ink);
+  padding: 9px 12px;
+  white-space: nowrap;
+  max-width: 44px;
+  overflow: hidden;
+  opacity: 0.09;
+  backdrop-filter: blur(8px);
+  transition:
+    max-width 180ms ease,
+    opacity 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.gpt-launcher:hover,
+.gpt-launcher:focus-visible {
+  max-width: 220px;
+  opacity: 1;
+  border-color: var(--accent);
+  box-shadow: 0 0 18px rgba(255, 47, 61, 0.22);
+}
+
+.gpt-launcher-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(255, 54, 69, 0.96), rgba(164, 11, 24, 0.9));
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  font-size: 0.78rem;
+  flex: 0 0 auto;
+}
+
+.gpt-launcher-label {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
 @media (max-width: 960px) {
   .school-layout {
     grid-template-columns: 1fr;
@@ -1822,5 +1878,10 @@ select {
   .assistant-float-panel {
     width: 100%;
     max-height: 72vh;
+  }
+
+  .gpt-launcher-shell {
+    right: 10px;
+    bottom: 18px;
   }
 }

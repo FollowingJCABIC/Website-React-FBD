@@ -10,6 +10,7 @@ import School from "./pages/School.jsx";
 import Whiteboard from "./pages/Whiteboard.jsx";
 import Meet from "./pages/Meet.jsx";
 import FullAccessAssistant from "./components/FullAccessAssistant.jsx";
+import ChatGPTLauncher from "./components/ChatGPTLauncher.jsx";
 import { SACRED_AUDIO, SACRED_IMAGES } from "./content/sacred.js";
 
 const CATEGORY_LABELS = {
@@ -686,6 +687,8 @@ function AppShell() {
           </button>
         </div>
       ) : null}
+
+      {canUseMemberPages ? <ChatGPTLauncher /> : null}
 
       <div className={`mini-player-shell ${miniPlayerPinned ? "is-open" : ""}`}>
         <aside id="mini-player-panel" className="mini-player" aria-label="Now playing">
