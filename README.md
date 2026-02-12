@@ -6,6 +6,16 @@
 - `visitor` (signed in): can open app links and member pages (Art/YouTube).
 - `full` (signed in): can also load full article and PDF library data, and manage school content.
 
+## Main Routes
+
+- `#/` Home (simplified landing hub + daily rotating masterworks panel)
+- `#/activities` external apps and activity links
+- `#/reflections` sacred media, liturgy, and daily thoughts
+- `#/library` full-access articles, PDFs, and site assistant
+- `#/art` member page
+- `#/youtube` member page
+- `#/school` member page
+
 Article and PDF payloads are served by server endpoints and require a valid full-access session cookie:
 
 - `GET /api/articles` (full only)
@@ -19,6 +29,7 @@ Article and PDF payloads are served by server endpoints and require a valid full
 - `GET /api/school/whiteboards` (visitor/full, optional `?id=<whiteboardId>` for full board data)
 - `POST /api/school/whiteboards` (visitor/full, create whiteboard)
 - `PUT /api/school/whiteboards` (visitor/full, save/update whiteboard)
+- `POST /api/assistant` (full only, site guide assistant)
 
 School data is stored in a lightweight JSON database at `/tmp/lastday-school-db.json` by default.
 You can override this with `SCHOOL_DB_PATH`.
@@ -32,6 +43,7 @@ The School whiteboard is built with the free `react-sketch-canvas` library and s
 - export whole board as JSON path data
 
 The School page also includes a built-in compact video panel using `meet.jit.si` for 1:1 or small-group sessions.
+The Home page includes a full-access Site Guide Assistant that answers navigation/content questions.
 
 ## Auth Environment Variables
 
@@ -43,3 +55,5 @@ Set these in Vercel project settings:
 - `FULL_EMAIL`
 - `FULL_PASSWORD`
 - `SCHOOL_DB_PATH` (optional override for the school JSON database file path)
+- `OPENAI_API_KEY` (optional for LLM-backed assistant responses)
+- `OPENAI_MODEL` (optional, default `gpt-4o-mini`)

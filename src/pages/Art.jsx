@@ -32,9 +32,9 @@ export default function Art({ entries, pdfLibrary, canAccessArticles }) {
                 <button
                   className="pill"
                   type="button"
-                  onClick={() => navigate("/", { state: { activeId: entry.id } })}
+                  onClick={() => navigate("/library", { state: { activeId: entry.id } })}
                 >
-                  Open entry on Home
+                  Open entry in Library
                 </button>
               </div>
             </article>

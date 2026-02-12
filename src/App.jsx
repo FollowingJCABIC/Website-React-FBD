@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { HashRouter, NavLink, Navigate, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home.jsx";
+import Activities from "./pages/Activities.jsx";
+import Reflections from "./pages/Reflections.jsx";
+import Library from "./pages/Library.jsx";
 import Art from "./pages/Art.jsx";
 import YouTube from "./pages/YouTube.jsx";
 import School from "./pages/School.jsx";
@@ -239,6 +242,13 @@ function AppShell() {
     setAuthPanelOpen(true);
   }
 
+  function requireFullAccess(event) {
+    if (canAccessArticles) return;
+    event.preventDefault();
+    setAuthError("Full login is required for Library.");
+    setAuthPanelOpen(true);
+  }
+
   return (
     <div className={`app ${authRole === ROLE_NONE ? "is-locked" : "is-authenticated"}`}>
       <div className="orb orb-one" />
@@ -256,6 +266,15 @@ function AppShell() {
         <nav className="nav-links" aria-label="Primary">
           <NavLink to="/" end>
             Home
+          </NavLink>
+          <NavLink to="/activities">Activities</NavLink>
+          <NavLink to="/reflections">Reflections</NavLink>
+          <NavLink
+            to="/library"
+            onClick={requireFullAccess}
+            className={({ isActive }) => `${isActive ? "active" : ""} ${canAccessArticles ? "" : "locked-nav"}`.trim()}
+          >
+            Library
           </NavLink>
           <NavLink
             to="/art"
@@ -365,12 +384,34 @@ function AppShell() {
             path="/"
             element={
               <Home
+                authRole={authRole}
+                canUseApps={canUseApps}
+                canAccessArticles={canAccessArticles}
+                onRequestSignIn={() => {
+                  setAuthError("");
+                  setAuthPanelOpen(true);
+                }}
+              />
+            }
+          />
+          <Route
+            path="/activities"
+            element={
+              <Activities
+                canUseApps={canUseApps}
+                onRequestSignIn={() => {
+                  setAuthError("");
+                  setAuthPanelOpen(true);
+                }}
+              />
+            }
+          />
+          <Route
+            path="/reflections"
+            element={
+              <Reflections
                 entries={entries}
                 meditations={meditations}
-                categoryLabels={CATEGORY_LABELS}
-                typeLabels={TYPE_LABELS}
-                pdfCategories={PDF_CATEGORIES}
-                pdfLibrary={pdfLibrary}
                 sacredImages={SACRED_IMAGES}
                 sacredAudio={SACRED_AUDIO}
                 trackId={trackId}
@@ -379,7 +420,19 @@ function AppShell() {
                 setIsLooping={setIsLooping}
                 isPlaying={isPlaying}
                 onTogglePlayback={togglePlayback}
-                canUseApps={canUseApps}
+                canAccessArticles={canAccessArticles}
+              />
+            }
+          />
+          <Route
+            path="/library"
+            element={
+              <Library
+                entries={entries}
+                categoryLabels={CATEGORY_LABELS}
+                typeLabels={TYPE_LABELS}
+                pdfCategories={PDF_CATEGORIES}
+                pdfLibrary={pdfLibrary}
                 canAccessArticles={canAccessArticles}
                 articlesError={articlesError}
                 onRequestSignIn={() => {
