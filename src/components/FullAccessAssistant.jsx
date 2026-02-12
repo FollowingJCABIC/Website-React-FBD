@@ -55,13 +55,14 @@ export default function FullAccessAssistant() {
           content: item.content,
         }));
 
-      const response = await fetch("/api/assistant", {
+      const response = await fetch("/api/school", {
         method: "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          action: "assistant",
           message: text,
           history,
         }),

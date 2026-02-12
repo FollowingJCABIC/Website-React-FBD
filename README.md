@@ -29,7 +29,7 @@ Article and PDF payloads are served by server endpoints and require a valid full
 - `GET /api/school/whiteboards` (visitor/full, optional `?id=<whiteboardId>` for full board data)
 - `POST /api/school/whiteboards` (visitor/full, create whiteboard)
 - `PUT /api/school/whiteboards` (visitor/full, save/update whiteboard)
-- `POST /api/assistant` (full only, site guide assistant)
+- `POST /api/school` (full only, set `action: "assistant"` for site guide assistant)
 
 School data is stored in a lightweight JSON database at `/tmp/lastday-school-db.json` by default.
 You can override this with `SCHOOL_DB_PATH`.
