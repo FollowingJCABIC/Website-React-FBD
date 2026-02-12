@@ -32,11 +32,22 @@ const PDF_CATEGORIES = [
 const ROLE_NONE = "none";
 const ROLE_VISITOR = "visitor";
 const ROLE_FULL = "full";
+const BANNER_STORAGE_KEY = "lds-banner-hidden-by-view-v1";
 const DEFAULT_PDF_LIBRARY = {
   religious: [],
   art: [],
   mathematics: [],
   talk: [],
+};
+
+const VIEW_LABELS = {
+  "/": "Home",
+  "/activities": "Activities",
+  "/reflections": "Reflections",
+  "/library": "Library",
+  "/art": "Art Hall",
+  "/youtube": "YouTube",
+  "/school": "School",
 };
 
 function AppShell() {
@@ -54,6 +65,7 @@ function AppShell() {
   const [authError, setAuthError] = useState("");
   const [miniPlayerPinned, setMiniPlayerPinned] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [bannerHiddenByView, setBannerHiddenByView] = useState({});
 
   const [trackId, setTrackId] = useState(SACRED_AUDIO[0]?.id ?? "");
   const [isLooping, setIsLooping] = useState(true);
@@ -64,6 +76,9 @@ function AppShell() {
   const canUseMemberPages = canUseApps;
   const canAccessArticles = authRole === ROLE_FULL;
   const showFloatingAssistant = authRole === ROLE_FULL && location.pathname !== "/library";
+  const currentView = location.pathname || "/";
+  const currentViewLabel = VIEW_LABELS[currentView] || "Workspace";
+  const bannerHidden = Boolean(bannerHiddenByView[currentView]);
 
   const activeTrack = SACRED_AUDIO.find((track) => track.id === trackId) || SACRED_AUDIO[0];
 
@@ -97,6 +112,27 @@ function AppShell() {
       setAssistantOpen(false);
     }
   }, [showFloatingAssistant]);
+
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(BANNER_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        setBannerHiddenByView(parsed);
+      }
+    } catch (_error) {
+      // Ignore invalid browser storage data.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(BANNER_STORAGE_KEY, JSON.stringify(bannerHiddenByView));
+    } catch (_error) {
+      // Ignore storage failures.
+    }
+  }, [bannerHiddenByView]);
 
   useEffect(() => {
     let cancelled = false;
@@ -260,6 +296,13 @@ function AppShell() {
     event.preventDefault();
     setAuthError("Full login is required for Library.");
     setAuthPanelOpen(true);
+  }
+
+  function setBannerHiddenForCurrentView(hidden) {
+    setBannerHiddenByView((current) => ({
+      ...current,
+      [currentView]: Boolean(hidden),
+    }));
   }
 
   return (
@@ -476,6 +519,24 @@ function AppShell() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
+      {bannerHidden ? (
+        <button className="pill trinity-banner-toggle" type="button" onClick={() => setBannerHiddenForCurrentView(false)}>
+          Show {currentViewLabel} banner
+        </button>
+      ) : (
+        <aside className="trinity-banner-rail" aria-label={`${currentViewLabel} banner`}>
+          <p className="trinity-view-label">{currentViewLabel}</p>
+          <div className="trinity-stack">
+            <p className="trinity-hebrew">אב</p>
+            <p className="trinity-hebrew">בן</p>
+            <p className="trinity-hebrew">רוח</p>
+          </div>
+          <button className="pill trinity-hide-button" type="button" onClick={() => setBannerHiddenForCurrentView(true)}>
+            Hide on this view
+          </button>
+        </aside>
+      )}
 
       {showFloatingAssistant ? (
         <div className="assistant-float-root">
