@@ -364,11 +364,18 @@ export default function SchoolWhiteboard({
   }
 
   function openFullPage() {
-    if (!activeBoardId) {
-      setErrorMessage("Select a whiteboard first.");
-      return;
+    const boardId = String(activeBoardId || "").trim();
+    const target = boardId ? `/whiteboard?id=${encodeURIComponent(boardId)}` : "/whiteboard";
+
+    // HashRouter deep-linking should work via navigate(), but keep a hard hash fallback
+    // so the button never feels "dead" if navigation is blocked by the runtime.
+    navigate(target);
+    if (typeof window !== "undefined") {
+      const nextHash = `#${target}`;
+      if (window.location.hash !== nextHash) {
+        window.location.hash = nextHash;
+      }
     }
-    navigate(`/whiteboard?id=${encodeURIComponent(activeBoardId)}`);
   }
 
   async function loadBoard(id) {
@@ -901,7 +908,7 @@ export default function SchoolWhiteboard({
               </div>
             ) : (
               <div className="whiteboard-toolbar-group">
-                <button className="pill" type="button" onClick={openFullPage} disabled={!activeBoardId}>
+                <button className="pill" type="button" onClick={openFullPage}>
                   Open full page
                 </button>
                 <button className="pill" type="button" onClick={() => setIsExpanded((prev) => !prev)}>
