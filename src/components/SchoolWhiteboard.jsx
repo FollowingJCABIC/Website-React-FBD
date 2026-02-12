@@ -367,15 +367,18 @@ export default function SchoolWhiteboard({
     const boardId = String(activeBoardId || "").trim();
     const target = boardId ? `/whiteboard?id=${encodeURIComponent(boardId)}` : "/whiteboard";
 
-    // HashRouter deep-linking should work via navigate(), but keep a hard hash fallback
-    // so the button never feels "dead" if navigation is blocked by the runtime.
-    navigate(target);
     if (typeof window !== "undefined") {
-      const nextHash = `#${target}`;
-      if (window.location.hash !== nextHash) {
-        window.location.hash = nextHash;
+      const base = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+      const url = `${base}#${target}`;
+      const opened = window.open(url, "_blank", "noopener,noreferrer");
+      if (opened) {
+        opened.opener = null;
+        return;
       }
     }
+
+    // Popup blocked or non-browser environment: fall back to in-tab navigation.
+    navigate(target);
   }
 
   async function loadBoard(id) {
@@ -909,7 +912,7 @@ export default function SchoolWhiteboard({
             ) : (
               <div className="whiteboard-toolbar-group">
                 <button className="pill" type="button" onClick={openFullPage}>
-                  Full screen whiteboard
+                  Full screen (new tab)
                 </button>
               </div>
             )}
