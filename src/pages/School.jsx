@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatDate } from "../lib/date.js";
 import SchoolWhiteboard from "../components/SchoolWhiteboard.jsx";
+import SchoolVideoPanel from "../components/SchoolVideoPanel.jsx";
 
 const ROLE_FULL = "full";
 const ASSIGNMENT_PROGRESS_KEY = "lds-school-assignment-progress-v1";
@@ -506,6 +507,7 @@ export default function School({ authRole }) {
       </section>
 
       <SchoolWhiteboard initialBoards={school.whiteboards} />
+      <SchoolVideoPanel classroomName={school.classroom.name} />
 
       {canManageSchool ? (
         <section className="school-teacher-tools">

@@ -1134,6 +1134,19 @@ select {
   padding: 24px;
 }
 
+.school-whiteboards.is-expanded {
+  position: fixed;
+  inset: 16px;
+  z-index: 160;
+  padding: 18px;
+  overflow: auto;
+  background: rgba(10, 3, 6, 0.98);
+}
+
+.school-whiteboards.is-expanded .whiteboard-layout {
+  min-height: calc(100vh - 130px);
+}
+
 .whiteboard-layout {
   margin-top: 14px;
   display: grid;
@@ -1205,6 +1218,14 @@ select {
   gap: 8px;
 }
 
+.whiteboard-toolbar select {
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+  padding: 8px 10px;
+  background: rgba(11, 2, 5, 0.94);
+  color: var(--ink);
+}
+
 .whiteboard-color-input {
   width: 38px;
   height: 32px;
@@ -1253,12 +1274,89 @@ select {
   gap: 8px;
 }
 
+.school-video-panel {
+  border-radius: var(--radius);
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow);
+  background: rgba(14, 4, 7, 0.84);
+  padding: 24px;
+  display: grid;
+  gap: 14px;
+}
+
+.video-panel-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+}
+
+.video-panel-controls {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.video-panel-controls input {
+  border-radius: 12px;
+  border: 1px solid var(--stroke);
+  padding: 10px 12px;
+  background: rgba(11, 2, 5, 0.94);
+  color: var(--ink);
+}
+
+.video-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.video-panel-frame-wrap {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 47, 61, 0.24);
+  background: rgba(20, 7, 11, 0.9);
+  min-height: 300px;
+  overflow: hidden;
+}
+
+.video-panel-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  border: 0;
+}
+
+.video-panel-placeholder {
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+}
+
+.video-infra-notes {
+  display: grid;
+  gap: 8px;
+}
+
+.video-infra-notes p {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
 @media (max-width: 960px) {
   .school-layout {
     grid-template-columns: 1fr;
   }
 
   .whiteboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .school-whiteboards.is-expanded {
+    inset: 10px;
+  }
+
+  .video-panel-grid {
     grid-template-columns: 1fr;
   }
 }

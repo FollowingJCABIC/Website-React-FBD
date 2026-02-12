@@ -25,8 +25,13 @@ You can override this with `SCHOOL_DB_PATH`.
 
 The School whiteboard is built with the free `react-sketch-canvas` library and supports:
 - save to school database
-- export to PNG
-- export to JSON path data
+- multi-page annotations per board
+- PDF upload to background (one uploaded PDF page becomes one annotatable board page)
+- expanded large-window mode for focused writing
+- export current page to PNG
+- export whole board as JSON path data
+
+The School page also includes a built-in compact video panel using `meet.jit.si` for 1:1 or small-group sessions.
 
 ## Auth Environment Variables
 

@@ -90,6 +90,12 @@ function sanitizeNumber(value, fallback, min, max) {
   return Math.min(max, Math.max(min, numeric));
 }
 
+function sanitizePageKey(value) {
+  const text = String(value || "").trim().slice(0, 80);
+  if (!text) return "";
+  return text.replace(/[^a-zA-Z0-9:_-]/g, "-");
+}
+
 function sanitizeStrokeColor(value) {
   const color = sanitizeString(value, 24);
   if (!color) return "#111111";
@@ -134,12 +140,79 @@ function sanitizeWhiteboardPaths(value) {
     .filter(Boolean);
 }
 
+function sanitizePageDrawings(value, fallbackPaths) {
+  const next = {};
+
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    Object.entries(value).forEach(([key, paths]) => {
+      const safeKey = sanitizePageKey(key);
+      if (!safeKey) return;
+      next[safeKey] = sanitizeWhiteboardPaths(paths);
+    });
+  }
+
+  if (!Object.keys(next).length) {
+    const fallback = sanitizeWhiteboardPaths(fallbackPaths);
+    next["page-1"] = fallback;
+  }
+
+  return next;
+}
+
+function sanitizePageOrder(value, drawings) {
+  const drawingKeys = Object.keys(drawings);
+  if (!Array.isArray(value)) return drawingKeys;
+
+  const deduped = [];
+  value.forEach((entry) => {
+    const key = sanitizePageKey(entry);
+    if (!key) return;
+    if (!drawingKeys.includes(key)) return;
+    if (!deduped.includes(key)) {
+      deduped.push(key);
+    }
+  });
+
+  drawingKeys.forEach((key) => {
+    if (!deduped.includes(key)) {
+      deduped.push(key);
+    }
+  });
+
+  return deduped.length ? deduped : drawingKeys;
+}
+
+function sanitizePageLabels(value, pageOrder) {
+  const labels = {};
+  const raw = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+
+  pageOrder.forEach((key, idx) => {
+    const label = sanitizeString(raw[key], 120) || `Page ${idx + 1}`;
+    labels[key] = label;
+  });
+
+  return labels;
+}
+
 function sanitizeWhiteboard(entry) {
+  const pageDrawings = sanitizePageDrawings(entry?.pageDrawings, entry?.paths);
+  const pageOrder = sanitizePageOrder(entry?.pageOrder, pageDrawings);
+  const pageLabels = sanitizePageLabels(entry?.pageLabels, pageOrder);
+  const activePageKeyCandidate = sanitizePageKey(entry?.activePageKey);
+  const activePageKey = pageOrder.includes(activePageKeyCandidate)
+    ? activePageKeyCandidate
+    : pageOrder[0];
+  const activePaths = pageDrawings[activePageKey] || [];
+
   return {
     id: sanitizeString(entry?.id, 80),
     title: sanitizeString(entry?.title, 120) || "Untitled Whiteboard",
     author: sanitizeString(entry?.author, 60) || "Member",
-    paths: sanitizeWhiteboardPaths(entry?.paths),
+    paths: activePaths,
+    pageDrawings,
+    pageOrder,
+    pageLabels,
+    activePageKey,
     previewImage: sanitizeDataUrlImage(entry?.previewImage),
     createdAt: sanitizeString(entry?.createdAt, 40),
     updatedAt: sanitizeString(entry?.updatedAt, 40),
@@ -147,13 +220,20 @@ function sanitizeWhiteboard(entry) {
 }
 
 function toWhiteboardSummary(entry) {
+  const totalPathCount = Object.values(entry.pageDrawings || {}).reduce(
+    (total, paths) => total + (Array.isArray(paths) ? paths.length : 0),
+    0
+  );
+
   return {
     id: entry.id,
     title: entry.title,
     author: entry.author,
     createdAt: entry.createdAt,
     updatedAt: entry.updatedAt,
-    pathCount: Array.isArray(entry.paths) ? entry.paths.length : 0,
+    pathCount: totalPathCount,
+    pageCount: Array.isArray(entry.pageOrder) ? entry.pageOrder.length : 1,
+    activePageKey: entry.activePageKey || "",
     previewImage: entry.previewImage || "",
   };
 }
@@ -345,7 +425,16 @@ export function getWhiteboard(id) {
   return sanitizeWhiteboard(found);
 }
 
-export function createWhiteboard({ title, author, paths, previewImage }) {
+export function createWhiteboard({
+  title,
+  author,
+  paths,
+  pageDrawings,
+  pageOrder,
+  pageLabels,
+  activePageKey,
+  previewImage,
+}) {
   const now = new Date().toISOString();
   const db = readSchoolDb();
 
@@ -354,6 +443,10 @@ export function createWhiteboard({ title, author, paths, previewImage }) {
     title: sanitizeString(title, 120) || "Untitled Whiteboard",
     author: sanitizeString(author, 60) || "Member",
     paths: sanitizeWhiteboardPaths(paths),
+    pageDrawings,
+    pageOrder,
+    pageLabels,
+    activePageKey,
     previewImage: sanitizeDataUrlImage(previewImage),
     createdAt: now,
     updatedAt: now,
@@ -369,7 +462,17 @@ export function createWhiteboard({ title, author, paths, previewImage }) {
   };
 }
 
-export function saveWhiteboard({ id, title, author, paths, previewImage }) {
+export function saveWhiteboard({
+  id,
+  title,
+  author,
+  paths,
+  pageDrawings,
+  pageOrder,
+  pageLabels,
+  activePageKey,
+  previewImage,
+}) {
   const whiteboardId = sanitizeString(id, 80);
   if (!whiteboardId) return null;
 
@@ -382,7 +485,22 @@ export function saveWhiteboard({ id, title, author, paths, previewImage }) {
   const nextTitle = sanitizeString(title, 120) || existing.title || "Untitled Whiteboard";
   const nextAuthor = sanitizeString(author, 60) || existing.author || "Member";
 
-  const nextPaths = Array.isArray(paths) ? sanitizeWhiteboardPaths(paths) : existing.paths;
+  const nextPageDrawings =
+    pageDrawings && typeof pageDrawings === "object" && !Array.isArray(pageDrawings)
+      ? sanitizePageDrawings(pageDrawings, [])
+      : sanitizePageDrawings(existing.pageDrawings, existing.paths);
+  const nextPageOrder = sanitizePageOrder(pageOrder, nextPageDrawings);
+  const nextPageLabels = sanitizePageLabels(pageLabels || existing.pageLabels, nextPageOrder);
+  const nextActivePageKey = nextPageOrder.includes(sanitizePageKey(activePageKey))
+    ? sanitizePageKey(activePageKey)
+    : existing.activePageKey || nextPageOrder[0];
+
+  if (Array.isArray(paths)) {
+    const fallbackKey = nextActivePageKey || nextPageOrder[0] || "page-1";
+    nextPageDrawings[fallbackKey] = sanitizeWhiteboardPaths(paths);
+  }
+
+  const nextPaths = nextPageDrawings[nextActivePageKey] || [];
   let nextPreview = existing.previewImage || "";
   if (typeof previewImage === "string") {
     const normalizedPreview = sanitizeDataUrlImage(previewImage);
@@ -394,6 +512,10 @@ export function saveWhiteboard({ id, title, author, paths, previewImage }) {
     title: nextTitle,
     author: nextAuthor,
     paths: nextPaths,
+    pageDrawings: nextPageDrawings,
+    pageOrder: nextPageOrder,
+    pageLabels: nextPageLabels,
+    activePageKey: nextActivePageKey,
     previewImage: nextPreview,
     updatedAt: now,
   });

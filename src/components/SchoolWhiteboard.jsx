@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ReactSketchCanvas } from "react-sketch-canvas";
+import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
+GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 function readJsonSafe(response) {
   return response.json().catch(() => ({}));
@@ -45,20 +49,87 @@ function slugify(value) {
   return text.replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
-function emptyBoardTemplate() {
+function createPageKey(prefix = "page") {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 7)}`;
+}
+
+function normalizeWhiteboard(whiteboard) {
+  const entry = whiteboard && typeof whiteboard === "object" ? whiteboard : {};
+  const fallbackPaths = Array.isArray(entry.paths) ? entry.paths : [];
+
+  const rawDrawings = entry.pageDrawings && typeof entry.pageDrawings === "object" ? entry.pageDrawings : {};
+  const pageDrawings = {};
+
+  Object.entries(rawDrawings).forEach(([key, paths]) => {
+    if (!key) return;
+    pageDrawings[key] = Array.isArray(paths) ? paths : [];
+  });
+
+  if (!Object.keys(pageDrawings).length) {
+    pageDrawings["page-1"] = fallbackPaths;
+  }
+
+  const pageOrder = Array.isArray(entry.pageOrder)
+    ? entry.pageOrder.filter((key) => typeof key === "string" && key && pageDrawings[key])
+    : [];
+
+  Object.keys(pageDrawings).forEach((key) => {
+    if (!pageOrder.includes(key)) {
+      pageOrder.push(key);
+    }
+  });
+
+  if (!pageOrder.length) {
+    pageOrder.push("page-1");
+    pageDrawings["page-1"] = [];
+  }
+
+  const pageLabels = {};
+  const rawLabels = entry.pageLabels && typeof entry.pageLabels === "object" ? entry.pageLabels : {};
+  pageOrder.forEach((key, idx) => {
+    const fromData = String(rawLabels[key] || "").trim();
+    pageLabels[key] = fromData || `Page ${idx + 1}`;
+  });
+
+  const activePageKey = pageOrder.includes(entry.activePageKey) ? entry.activePageKey : pageOrder[0];
+
   return {
+    id: String(entry.id || ""),
+    title: String(entry.title || ""),
+    author: String(entry.author || ""),
+    paths: pageDrawings[activePageKey] || [],
+    pageDrawings,
+    pageOrder,
+    pageLabels,
+    activePageKey,
+    createdAt: String(entry.createdAt || ""),
+    updatedAt: String(entry.updatedAt || ""),
+  };
+}
+
+function emptyBoardTemplate() {
+  return normalizeWhiteboard({
     id: "",
     title: "",
     author: "",
     paths: [],
+    pageDrawings: {
+      "page-1": [],
+    },
+    pageOrder: ["page-1"],
+    pageLabels: {
+      "page-1": "Page 1",
+    },
+    activePageKey: "page-1",
     createdAt: "",
     updatedAt: "",
-  };
+  });
 }
 
 export default function SchoolWhiteboard({ initialBoards }) {
   const canvasRef = useRef(null);
   const isHydratingPathsRef = useRef(false);
+  const activeBoardRef = useRef(emptyBoardTemplate());
 
   const [boards, setBoards] = useState(() => sortBoards(initialBoards));
   const [activeBoardId, setActiveBoardId] = useState(() => sortBoards(initialBoards)[0]?.id || "");
@@ -75,9 +146,16 @@ export default function SchoolWhiteboard({ initialBoards }) {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingBoard, setLoadingBoard] = useState(false);
+  const [loadingPdf, setLoadingPdf] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
+  const [pageBackgrounds, setPageBackgrounds] = useState({});
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    activeBoardRef.current = activeBoard;
+  }, [activeBoard]);
 
   useEffect(() => {
     const next = sortBoards(initialBoards);
@@ -92,6 +170,76 @@ export default function SchoolWhiteboard({ initialBoards }) {
     if (!canvasRef.current) return;
     canvasRef.current.eraseMode(isEraserMode);
   }, [isEraserMode]);
+
+  useEffect(() => {
+    if (!isExpanded) {
+      document.body.style.removeProperty("overflow");
+      return;
+    }
+
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.removeProperty("overflow");
+    };
+  }, [isExpanded]);
+
+  async function hydrateCanvas(paths) {
+    if (!canvasRef.current) return;
+
+    isHydratingPathsRef.current = true;
+    canvasRef.current.resetCanvas();
+
+    if (Array.isArray(paths) && paths.length > 0) {
+      canvasRef.current.loadPaths(paths);
+    }
+
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+    isHydratingPathsRef.current = false;
+  }
+
+  async function exportCurrentPaths() {
+    if (!canvasRef.current) return [];
+
+    try {
+      const paths = await canvasRef.current.exportPaths();
+      return Array.isArray(paths) ? paths : [];
+    } catch (_error) {
+      return [];
+    }
+  }
+
+  async function commitCurrentPageToState(baseBoard) {
+    const board = normalizeWhiteboard(baseBoard || activeBoardRef.current);
+    const paths = await exportCurrentPaths();
+    const pageDrawings = {
+      ...board.pageDrawings,
+      [board.activePageKey]: paths,
+    };
+
+    return {
+      ...board,
+      pageDrawings,
+      paths,
+    };
+  }
+
+  async function openPage(nextPageKey) {
+    const current = normalizeWhiteboard(activeBoardRef.current);
+    if (!nextPageKey || !current.pageOrder.includes(nextPageKey)) return;
+    if (nextPageKey === current.activePageKey) return;
+
+    const withCurrent = await commitCurrentPageToState(current);
+    const nextPaths = withCurrent.pageDrawings[nextPageKey] || [];
+    const nextBoard = {
+      ...withCurrent,
+      activePageKey: nextPageKey,
+      paths: nextPaths,
+    };
+
+    setActiveBoard(nextBoard);
+    setPathCount(nextPaths.length);
+    await hydrateCanvas(nextPaths);
+  }
 
   async function loadBoard(id) {
     if (!id) return;
@@ -110,23 +258,14 @@ export default function SchoolWhiteboard({ initialBoards }) {
         return;
       }
 
-      const whiteboard = payload?.whiteboard || emptyBoardTemplate();
+      const whiteboard = normalizeWhiteboard(payload?.whiteboard || emptyBoardTemplate());
       setActiveBoard(whiteboard);
       setBoardAuthor(whiteboard.author || "");
-      setPathCount(Array.isArray(whiteboard.paths) ? whiteboard.paths.length : 0);
+      setPathCount((whiteboard.pageDrawings[whiteboard.activePageKey] || []).length);
+      setPageBackgrounds({});
       setDirty(false);
 
-      if (canvasRef.current) {
-        isHydratingPathsRef.current = true;
-        canvasRef.current.resetCanvas();
-        if (Array.isArray(whiteboard.paths) && whiteboard.paths.length > 0) {
-          canvasRef.current.loadPaths(whiteboard.paths);
-        }
-
-        window.setTimeout(() => {
-          isHydratingPathsRef.current = false;
-        }, 50);
-      }
+      await hydrateCanvas(whiteboard.pageDrawings[whiteboard.activePageKey] || []);
     } catch (_error) {
       setErrorMessage("Could not load whiteboard.");
     } finally {
@@ -160,6 +299,14 @@ export default function SchoolWhiteboard({ initialBoards }) {
         body: JSON.stringify({
           title,
           author: boardAuthor.trim() || "Member",
+          pageDrawings: {
+            "page-1": [],
+          },
+          pageOrder: ["page-1"],
+          pageLabels: {
+            "page-1": "Page 1",
+          },
+          activePageKey: "page-1",
           paths: [],
         }),
       });
@@ -194,10 +341,8 @@ export default function SchoolWhiteboard({ initialBoards }) {
     setSaving(true);
 
     try {
-      const [paths, previewImage] = await Promise.all([
-        canvasRef.current.exportPaths(),
-        canvasRef.current.exportImage("png"),
-      ]);
+      const current = await commitCurrentPageToState(activeBoardRef.current);
+      const [previewImage] = await Promise.all([canvasRef.current.exportImage("png")]);
 
       const response = await fetch("/api/school/whiteboards", {
         method: "PUT",
@@ -207,9 +352,13 @@ export default function SchoolWhiteboard({ initialBoards }) {
         },
         body: JSON.stringify({
           id: activeBoardId,
-          title: activeBoard.title,
+          title: current.title,
           author: boardAuthor.trim() || "Member",
-          paths,
+          pageDrawings: current.pageDrawings,
+          pageOrder: current.pageOrder,
+          pageLabels: current.pageLabels,
+          activePageKey: current.activePageKey,
+          paths: current.paths,
           previewImage,
         }),
       });
@@ -221,12 +370,13 @@ export default function SchoolWhiteboard({ initialBoards }) {
 
       const summary = payload?.summary;
       if (summary?.id) {
-        setBoards((current) => sortBoards([summary, ...current.filter((item) => item.id !== summary.id)]));
+        setBoards((currentBoards) => sortBoards([summary, ...currentBoards.filter((item) => item.id !== summary.id)]));
       }
       if (payload?.whiteboard) {
-        setActiveBoard(payload.whiteboard);
+        const normalized = normalizeWhiteboard(payload.whiteboard);
+        setActiveBoard(normalized);
+        setPathCount((normalized.pageDrawings[normalized.activePageKey] || []).length);
       }
-      setPathCount(Array.isArray(paths) ? paths.length : 0);
       setDirty(false);
       setStatusMessage("Whiteboard saved to database.");
     } catch (_error) {
@@ -237,34 +387,156 @@ export default function SchoolWhiteboard({ initialBoards }) {
   }
 
   async function exportPng() {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !activeBoardId) return;
     setErrorMessage("");
+
     try {
       const image = await canvasRef.current.exportImage("png");
-      downloadDataUrl(`${slugify(activeBoard.title || "whiteboard")}.png`, image);
-      setStatusMessage("PNG exported.");
+      const activeLabel = activeBoard.pageLabels?.[activeBoard.activePageKey] || activeBoard.activePageKey || "page";
+      downloadDataUrl(`${slugify(activeBoard.title || "whiteboard")}-${slugify(activeLabel)}.png`, image);
+      setStatusMessage("Current page PNG exported.");
     } catch (_error) {
       setErrorMessage("Could not export PNG.");
     }
   }
 
   async function exportJson() {
-    if (!canvasRef.current) return;
+    if (!activeBoardId || !canvasRef.current) return;
     setErrorMessage("");
+
     try {
-      const paths = await canvasRef.current.exportPaths();
+      const current = await commitCurrentPageToState(activeBoardRef.current);
       const payload = {
-        id: activeBoard.id,
-        title: activeBoard.title,
-        author: boardAuthor || activeBoard.author || "Member",
+        id: current.id,
+        title: current.title,
+        author: boardAuthor || current.author || "Member",
         exportedAt: new Date().toISOString(),
-        paths,
+        pageDrawings: current.pageDrawings,
+        pageOrder: current.pageOrder,
+        pageLabels: current.pageLabels,
+        activePageKey: current.activePageKey,
       };
-      downloadText(`${slugify(activeBoard.title || "whiteboard")}.json`, JSON.stringify(payload, null, 2));
-      setStatusMessage("JSON exported.");
+      downloadText(`${slugify(current.title || "whiteboard")}.json`, JSON.stringify(payload, null, 2));
+      setStatusMessage("Board JSON exported.");
     } catch (_error) {
       setErrorMessage("Could not export JSON.");
     }
+  }
+
+  async function addBlankPage() {
+    if (!activeBoardId) {
+      setErrorMessage("Create or select a whiteboard first.");
+      return;
+    }
+
+    const current = await commitCurrentPageToState(activeBoardRef.current);
+    const newKey = createPageKey("page");
+    const nextOrder = [...current.pageOrder, newKey];
+    const nextBoard = {
+      ...current,
+      pageDrawings: {
+        ...current.pageDrawings,
+        [newKey]: [],
+      },
+      pageOrder: nextOrder,
+      pageLabels: {
+        ...current.pageLabels,
+        [newKey]: `Page ${nextOrder.length}`,
+      },
+      activePageKey: newKey,
+      paths: [],
+    };
+
+    setActiveBoard(nextBoard);
+    setPathCount(0);
+    setDirty(true);
+    await hydrateCanvas([]);
+  }
+
+  async function uploadPdfBackground(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!activeBoardId) {
+      setErrorMessage("Create or select a whiteboard first.");
+      event.target.value = "";
+      return;
+    }
+
+    setErrorMessage("");
+    setStatusMessage("");
+    setLoadingPdf(true);
+
+    try {
+      const current = await commitCurrentPageToState(activeBoardRef.current);
+      const buffer = await file.arrayBuffer();
+      const pdf = await getDocument({ data: new Uint8Array(buffer) }).promise;
+
+      const pageDrawings = {
+        ...current.pageDrawings,
+      };
+      const pageOrder = [...current.pageOrder];
+      const pageLabels = {
+        ...current.pageLabels,
+      };
+      const backgrounds = {};
+
+      const baseKey = createPageKey("pdf");
+
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+        const page = await pdf.getPage(pageNumber);
+        const viewport = page.getViewport({ scale: 1.35 });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d", { alpha: false });
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+
+        if (!context) continue;
+
+        await page.render({
+          canvasContext: context,
+          viewport,
+        }).promise;
+
+        const pageKey = `${baseKey}-${pageNumber}`;
+        backgrounds[pageKey] = canvas.toDataURL("image/jpeg", 0.9);
+        pageDrawings[pageKey] = [];
+        pageOrder.push(pageKey);
+        pageLabels[pageKey] = `${file.name} - Page ${pageNumber}`;
+      }
+
+      const firstNewKey = pageOrder.find((key) => backgrounds[key]);
+      const activePageKey = firstNewKey || current.activePageKey;
+      const nextBoard = {
+        ...current,
+        pageDrawings,
+        pageOrder,
+        pageLabels,
+        activePageKey,
+        paths: pageDrawings[activePageKey] || [],
+      };
+
+      setPageBackgrounds((previous) => ({
+        ...previous,
+        ...backgrounds,
+      }));
+      setActiveBoard(nextBoard);
+      setPathCount((nextBoard.pageDrawings[nextBoard.activePageKey] || []).length);
+      setDirty(true);
+      await hydrateCanvas(nextBoard.pageDrawings[nextBoard.activePageKey] || []);
+
+      setStatusMessage(`Loaded ${pdf.numPages} PDF pages from ${file.name}.`);
+    } catch (_error) {
+      setErrorMessage("Could not read that PDF. Try a smaller or standard PDF file.");
+    } finally {
+      setLoadingPdf(false);
+      event.target.value = "";
+    }
+  }
+
+  function clearPdfBackgrounds() {
+    setPageBackgrounds({});
+    setStatusMessage("PDF page backgrounds cleared for this session.");
   }
 
   function setPenMode() {
@@ -293,11 +565,14 @@ export default function SchoolWhiteboard({ initialBoards }) {
     [boards, activeBoardId]
   );
 
+  const currentPageBackground = activeBoard.activePageKey ? pageBackgrounds[activeBoard.activePageKey] || "" : "";
+  const canvasHeight = isExpanded ? "68vh" : "460px";
+
   return (
-    <section className="school-whiteboards">
+    <section className={`school-whiteboards ${isExpanded ? "is-expanded" : ""}`}>
       <div className="school-section-header">
         <p className="eyebrow">Whiteboard Studio</p>
-        <h2>Sketch, save, and export</h2>
+        <h2>Sketch, save, annotate PDFs, and export</h2>
       </div>
 
       <div className="whiteboard-layout">
@@ -319,6 +594,20 @@ export default function SchoolWhiteboard({ initialBoards }) {
             </button>
           </form>
 
+          <div className="school-form">
+            <p className="filter-label">Background PDF</p>
+            <input type="file" accept="application/pdf" onChange={uploadPdfBackground} disabled={loadingPdf || !activeBoardId} />
+            <div className="whiteboard-actions">
+              <button className="pill" type="button" onClick={addBlankPage} disabled={!activeBoardId}>
+                Add blank page
+              </button>
+              <button className="pill" type="button" onClick={clearPdfBackgrounds} disabled={!Object.keys(pageBackgrounds).length}>
+                Clear PDF backgrounds
+              </button>
+            </div>
+            <p className="muted">Upload adds each PDF page as an annotatable whiteboard page.</p>
+          </div>
+
           <div className="whiteboard-list">
             {boards.length === 0 ? <p className="muted">No whiteboards yet.</p> : null}
             {boards.map((entry) => (
@@ -331,6 +620,9 @@ export default function SchoolWhiteboard({ initialBoards }) {
                 <div className="whiteboard-list-item-title">{entry.title || "Untitled Whiteboard"}</div>
                 <div className="whiteboard-list-item-meta">
                   <span>{entry.pathCount || 0} strokes</span>
+                  <span>{entry.pageCount || 1} pages</span>
+                </div>
+                <div className="whiteboard-list-item-meta">
                   <span>{formatDateTime(entry.updatedAt)}</span>
                 </div>
               </button>
@@ -386,6 +678,24 @@ export default function SchoolWhiteboard({ initialBoards }) {
             </div>
 
             <div className="whiteboard-toolbar-group">
+              <label className="filter-label" htmlFor="whiteboard-page-picker">
+                Page
+              </label>
+              <select
+                id="whiteboard-page-picker"
+                value={activeBoard.activePageKey || ""}
+                onChange={(event) => openPage(event.target.value)}
+                disabled={!activeBoardId}
+              >
+                {activeBoard.pageOrder.map((key, idx) => (
+                  <option key={key} value={key}>
+                    {activeBoard.pageLabels[key] || `Page ${idx + 1}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="whiteboard-toolbar-group">
               <button className="pill" type="button" onClick={() => canvasRef.current?.undo()}>
                 Undo
               </button>
@@ -393,7 +703,13 @@ export default function SchoolWhiteboard({ initialBoards }) {
                 Redo
               </button>
               <button className="pill" type="button" onClick={clearCanvas}>
-                Clear
+                Clear page
+              </button>
+            </div>
+
+            <div className="whiteboard-toolbar-group">
+              <button className="pill" type="button" onClick={() => setIsExpanded((prev) => !prev)}>
+                {isExpanded ? "Exit large mode" : "Open large mode"}
               </button>
             </div>
           </div>
@@ -403,8 +719,11 @@ export default function SchoolWhiteboard({ initialBoards }) {
               ref={canvasRef}
               className="whiteboard-canvas"
               width="100%"
-              height="420px"
+              height={canvasHeight}
               canvasColor="#fff"
+              backgroundImage={currentPageBackground}
+              preserveBackgroundImageAspectRatio="xMidYMid meet"
+              exportWithBackgroundImage
               strokeColor={strokeColor}
               strokeWidth={strokeWidth}
               eraserWidth={24}
@@ -426,8 +745,7 @@ export default function SchoolWhiteboard({ initialBoards }) {
                 disabled={!activeBoardId}
               />
               <span className="muted">
-                {activeBoardMeta?.author || activeBoard.author || "Member"} · {pathCount} strokes{" "}
-                {dirty ? "· unsaved changes" : ""}
+                {activeBoardMeta?.author || activeBoard.author || "Member"} · {pathCount} strokes on this page · {activeBoard.pageOrder.length} total pages {dirty ? "· unsaved changes" : ""}
               </span>
             </div>
 
@@ -436,15 +754,16 @@ export default function SchoolWhiteboard({ initialBoards }) {
                 {saving ? "Saving..." : "Save to database"}
               </button>
               <button className="pill" type="button" onClick={exportPng} disabled={!activeBoardId}>
-                Export PNG
+                Export PNG page
               </button>
               <button className="pill" type="button" onClick={exportJson} disabled={!activeBoardId}>
-                Export JSON
+                Export board JSON
               </button>
             </div>
           </div>
 
           {loadingBoard ? <p className="muted">Loading whiteboard...</p> : null}
+          {loadingPdf ? <p className="muted">Rendering PDF pages for annotation...</p> : null}
           {statusMessage ? <p className="muted">{statusMessage}</p> : null}
           {errorMessage ? <p className="auth-error">{errorMessage}</p> : null}
         </article>

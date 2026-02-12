@@ -44,6 +44,11 @@ export default async function handler(req, res) {
         title,
         author,
         paths: Array.isArray(body?.paths) ? body.paths : [],
+        pageDrawings:
+          body?.pageDrawings && typeof body.pageDrawings === "object" ? body.pageDrawings : undefined,
+        pageOrder: Array.isArray(body?.pageOrder) ? body.pageOrder : undefined,
+        pageLabels: body?.pageLabels && typeof body.pageLabels === "object" ? body.pageLabels : undefined,
+        activePageKey: String(body?.activePageKey || "").trim(),
         previewImage: String(body?.previewImage || ""),
       });
 
@@ -69,6 +74,11 @@ export default async function handler(req, res) {
         title: String(body?.title || "").trim(),
         author: String(body?.author || "").trim(),
         paths: Array.isArray(body?.paths) ? body.paths : undefined,
+        pageDrawings:
+          body?.pageDrawings && typeof body.pageDrawings === "object" ? body.pageDrawings : undefined,
+        pageOrder: Array.isArray(body?.pageOrder) ? body.pageOrder : undefined,
+        pageLabels: body?.pageLabels && typeof body.pageLabels === "object" ? body.pageLabels : undefined,
+        activePageKey: String(body?.activePageKey || "").trim(),
         previewImage: typeof body?.previewImage === "string" ? body.previewImage : undefined,
       });
 
