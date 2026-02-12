@@ -28,6 +28,7 @@ function QuickCard({ title, description, to, href, cta, locked, onRequestSignIn 
 
 export default function Home({ authRole, canUseApps, canAccessArticles, onRequestSignIn }) {
   const roleLabel = authRole === "full" ? "Full access" : authRole === "visitor" ? "Visitor access" : "Public";
+  const isPublic = authRole === "none";
   const dailyMasterworks = useMemo(() => {
     const list = Array.isArray(MASTERWORKS) ? MASTERWORKS : [];
     if (!list.length) return [];
@@ -91,59 +92,63 @@ export default function Home({ authRole, canUseApps, canAccessArticles, onReques
               onRequestSignIn={onRequestSignIn}
             />
 
-            <QuickCard
-              title="Activities"
-              description="Open interactive external tools and standalone apps."
-              to="/activities"
-              cta="Open Activities"
-              locked={!canUseApps}
-              onRequestSignIn={onRequestSignIn}
-            />
+            {!isPublic ? (
+              <>
+                <QuickCard
+                  title="Activities"
+                  description="Open interactive external tools and standalone apps."
+                  to="/activities"
+                  cta="Open Activities"
+                  locked={!canUseApps}
+                  onRequestSignIn={onRequestSignIn}
+                />
 
-            <QuickCard
-              title="Reflections"
-              description="Sacred media, daily liturgy, and journal thoughts."
-              to="/reflections"
-              cta="Open Reflections"
-              locked={!canUseApps}
-              onRequestSignIn={onRequestSignIn}
-            />
+                <QuickCard
+                  title="Reflections"
+                  description="Sacred media, daily liturgy, and journal thoughts."
+                  to="/reflections"
+                  cta="Open Reflections"
+                  locked={!canUseApps}
+                  onRequestSignIn={onRequestSignIn}
+                />
 
-            <QuickCard
-              title="Library"
-              description="Article reader, PDF archive, and full-access site assistant."
-              to="/library"
-              cta="Open Library"
-              locked={!canAccessArticles}
-              onRequestSignIn={onRequestSignIn}
-            />
+                <QuickCard
+                  title="Library"
+                  description="Article reader, PDF archive, and full-access site assistant."
+                  to="/library"
+                  cta="Open Library"
+                  locked={!canAccessArticles}
+                  onRequestSignIn={onRequestSignIn}
+                />
 
-            <QuickCard
-              title="Art Hall"
-              description="Art entries, drafts, and media-focused pages."
-              to="/art"
-              cta="Open Art Hall"
-              locked={!canUseApps}
-              onRequestSignIn={onRequestSignIn}
-            />
+                <QuickCard
+                  title="Art Hall"
+                  description="Art entries, drafts, and media-focused pages."
+                  to="/art"
+                  cta="Open Art Hall"
+                  locked={!canUseApps}
+                  onRequestSignIn={onRequestSignIn}
+                />
 
-            <QuickCard
-              title="YouTube"
-              description="Video publishing index and embeds from your list."
-              to="/youtube"
-              cta="Open YouTube"
-              locked={!canUseApps}
-              onRequestSignIn={onRequestSignIn}
-            />
+                <QuickCard
+                  title="YouTube"
+                  description="Video publishing index and embeds from your list."
+                  to="/youtube"
+                  cta="Open YouTube"
+                  locked={!canUseApps}
+                  onRequestSignIn={onRequestSignIn}
+                />
 
-            <QuickCard
-              title="School"
-              description="Classroom tools, whiteboard, assignments, and meeting panel."
-              to="/school"
-              cta="Open School"
-              locked={!canUseApps}
-              onRequestSignIn={onRequestSignIn}
-            />
+                <QuickCard
+                  title="School"
+                  description="Classroom tools, whiteboard, assignments, and meeting panel."
+                  to="/school"
+                  cta="Open School"
+                  locked={!canUseApps}
+                  onRequestSignIn={onRequestSignIn}
+                />
+              </>
+            ) : null}
           </div>
         </section>
       </div>

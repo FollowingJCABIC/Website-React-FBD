@@ -16,6 +16,8 @@
 - `#/youtube` member page
 - `#/school` member page
 
+When signed out, the Home quick-launch grid shows only Bible Mastery Lab; other route cards appear after sign-in.
+
 Article and PDF payloads are served by server endpoints and require a valid full-access session cookie:
 
 - `GET /api/articles` (full only)
