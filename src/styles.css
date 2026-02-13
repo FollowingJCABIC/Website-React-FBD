@@ -983,15 +983,10 @@ select {
 }
 
 .mini-player-handle-label {
+  display: none;
   line-height: 1;
 }
 
-.mini-player-shell:not(.is-open) .mini-player-handle-label {
-  display: none;
-}
-
-.mini-player:hover .mini-player-handle-label,
-.mini-player:focus-within .mini-player-handle-label,
 .mini-player-shell.is-open .mini-player-handle-label {
   display: inline;
 }
