@@ -203,6 +203,7 @@ export default function SchoolWhiteboard({
   const [loadingBoard, setLoadingBoard] = useState(false);
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [isExpanded, setIsExpanded] = useState(() => Boolean(standalone));
+  const [sidebarOpen, setSidebarOpen] = useState(() => !standalone);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [pdfFitMode, setPdfFitMode] = useState("fit");
 
@@ -221,7 +222,19 @@ export default function SchoolWhiteboard({
   useEffect(() => {
     if (!standalone) return;
     setIsExpanded(true);
+    setSidebarOpen(false);
   }, [standalone]);
+
+  useEffect(() => {
+    if (!standalone || !sidebarOpen) return;
+
+    function onKeyDown(event) {
+      if (event.key === "Escape") setSidebarOpen(false);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [standalone, sidebarOpen]);
 
   useEffect(() => {
     const nextId = String(initialBoardId || "").trim();
@@ -719,8 +732,17 @@ export default function SchoolWhiteboard({
         <h2>Sketch, save, annotate PDFs, and export</h2>
       </div>
 
-      <div className="whiteboard-layout">
-        <aside className="whiteboard-sidebar">
+      <div className={`whiteboard-layout ${standalone ? "is-standalone" : ""}`.trim()}>
+        {standalone && sidebarOpen ? (
+          <button
+            className="whiteboard-sidebar-backdrop"
+            type="button"
+            aria-label="Close whiteboard menu"
+            onClick={() => setSidebarOpen(false)}
+          />
+        ) : null}
+
+        <aside className={`whiteboard-sidebar ${standalone && sidebarOpen ? "is-open" : ""}`.trim()} aria-label="Whiteboard menu">
           <form className="school-form" onSubmit={createBoard}>
             <p className="filter-label">Create whiteboard</p>
             <input
@@ -778,6 +800,17 @@ export default function SchoolWhiteboard({
 
         <article className="whiteboard-workspace">
           <div className="whiteboard-toolbar">
+            {standalone ? (
+              <div className="whiteboard-toolbar-group">
+                <button className="pill" type="button" onClick={() => setSidebarOpen((prev) => !prev)}>
+                  {sidebarOpen ? "Hide menu" : "Show menu"}
+                </button>
+                <button className="pill" type="button" onClick={() => navigate("/school")}>
+                  Back to School
+                </button>
+              </div>
+            ) : null}
+
             <div className="whiteboard-toolbar-group">
               <button
                 className={`pill ${!isEraserMode ? "active" : ""}`}
@@ -903,19 +936,13 @@ export default function SchoolWhiteboard({
               </button>
             </div>
 
-            {standalone ? (
-              <div className="whiteboard-toolbar-group">
-                <button className="pill" type="button" onClick={() => navigate("/school")}>
-                  Back to School
-                </button>
-              </div>
-            ) : (
+            {!standalone ? (
               <div className="whiteboard-toolbar-group">
                 <button className="pill" type="button" onClick={openFullPage}>
                   Full screen (new tab)
                 </button>
               </div>
-            )}
+            ) : null}
           </div>
 
           <div className="whiteboard-canvas-wrap" style={{ height: baseCanvasHeight }}>
