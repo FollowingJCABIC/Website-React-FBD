@@ -1,16 +1,20 @@
 :root {
   color-scheme: dark;
   font-family: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
-  --bg: #070203;
-  --bg-dark: #120306;
-  --ink: #f8e7ea;
-  --ink-soft: #d1b1b5;
-  --accent: #ff2f3d;
-  --accent-soft: rgba(255, 47, 61, 0.2);
-  --accent-glow: rgba(255, 47, 61, 0.42);
-  --card: rgba(20, 5, 9, 0.84);
-  --card-strong: #19060a;
-  --stroke: rgba(255, 77, 90, 0.26);
+  --bg: #050001;
+  --bg-dark: #140105;
+  --ink: #fff1ea;
+  --ink-soft: #e2c3bb;
+  --accent: #ff1f37;
+  --accent-soft: rgba(255, 31, 55, 0.24);
+  --accent-glow: rgba(255, 31, 55, 0.52);
+  --gold: #d9b25f;
+  --gold-soft: rgba(217, 178, 95, 0.18);
+  --gold-glow: rgba(217, 178, 95, 0.28);
+  --card: rgba(24, 6, 10, 0.86);
+  --card-strong: #1a060b;
+  --stroke: rgba(255, 47, 61, 0.34);
+  --stroke-gold: rgba(217, 178, 95, 0.32);
   --shadow: 0 24px 48px rgba(0, 0, 0, 0.58);
   --radius: 22px;
 }
@@ -23,15 +27,23 @@ body {
   margin: 0;
   color: var(--ink);
   background:
-    radial-gradient(circle at 15% 10%, rgba(255, 47, 61, 0.26), transparent 45%),
-    radial-gradient(circle at 80% 20%, rgba(113, 17, 28, 0.34), transparent 40%),
-    linear-gradient(135deg, rgba(9, 2, 4, 0.96), rgba(18, 3, 7, 0.98)),
+    radial-gradient(circle at 18% 10%, rgba(217, 178, 95, 0.12), transparent 46%),
+    radial-gradient(circle at 15% 10%, rgba(255, 31, 55, 0.34), transparent 45%),
+    radial-gradient(circle at 80% 20%, rgba(113, 17, 28, 0.44), transparent 40%),
+    linear-gradient(135deg, rgba(7, 1, 2, 0.96), rgba(19, 2, 6, 0.98)),
     repeating-linear-gradient(
       120deg,
-      rgba(255, 47, 61, 0.05) 0px,
-      rgba(255, 47, 61, 0.05) 10px,
+      rgba(255, 31, 55, 0.06) 0px,
+      rgba(255, 31, 55, 0.06) 10px,
       rgba(0, 0, 0, 0.12) 20px,
-      rgba(255, 47, 61, 0.04) 30px
+      rgba(255, 31, 55, 0.05) 30px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(217, 178, 95, 0.025) 0px,
+      rgba(217, 178, 95, 0.025) 1px,
+      transparent 1px,
+      transparent 140px
     );
 }
 
@@ -54,7 +66,7 @@ a {
 .orb-one {
   width: 420px;
   height: 420px;
-  background: radial-gradient(circle, rgba(255, 47, 61, 0.35), transparent 70%);
+  background: radial-gradient(circle, rgba(255, 31, 55, 0.42), transparent 70%);
   top: -160px;
   right: -120px;
   animation: float 18s ease-in-out infinite;
@@ -63,7 +75,7 @@ a {
 .orb-two {
   width: 520px;
   height: 520px;
-  background: radial-gradient(circle, rgba(144, 20, 34, 0.32), transparent 70%);
+  background: radial-gradient(circle, rgba(217, 178, 95, 0.22), transparent 70%);
   bottom: -220px;
   left: -120px;
   animation: float 22s ease-in-out infinite reverse;
@@ -108,12 +120,32 @@ a {
   display: grid;
   place-items: center;
   border-radius: 12px;
-  background: linear-gradient(145deg, #ff3b49, #890916);
+  border: 1px solid rgba(217, 178, 95, 0.34);
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      transparent 47%,
+      rgba(217, 178, 95, 0.52) 47%,
+      rgba(217, 178, 95, 0.52) 53%,
+      transparent 53%,
+      transparent 100%
+    ),
+    linear-gradient(
+      transparent 0%,
+      transparent 47%,
+      rgba(217, 178, 95, 0.52) 47%,
+      rgba(217, 178, 95, 0.52) 53%,
+      transparent 53%,
+      transparent 100%
+    ),
+    linear-gradient(145deg, #ff3b49, #890916);
   color: #fff;
   font-weight: 700;
   box-shadow:
-    0 0 0 1px rgba(255, 109, 121, 0.32),
-    0 12px 24px rgba(255, 47, 61, 0.36);
+    0 0 0 1px rgba(255, 109, 121, 0.22),
+    0 0 0 4px rgba(217, 178, 95, 0.06),
+    0 12px 24px rgba(255, 31, 55, 0.4);
 }
 
 .brand-sub {
@@ -138,7 +170,8 @@ a {
 .nav-links a.active,
 .nav-links a:hover {
   border-color: var(--accent);
-  background: rgba(255, 47, 61, 0.14);
+  background: rgba(255, 31, 55, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(217, 178, 95, 0.08);
 }
 
 .nav-links a.locked-nav {
@@ -214,10 +247,11 @@ a {
   gap: 12px;
   padding: 14px 8px;
   border-radius: 16px 0 0 16px;
-  border: 1px solid rgba(255, 38, 38, 0.52);
+  border: 1px solid rgba(217, 178, 95, 0.34);
   background: rgba(6, 1, 2, 0.94);
   box-shadow:
-    inset 0 0 24px rgba(128, 0, 0, 0.36),
+    inset 0 0 20px rgba(217, 178, 95, 0.14),
+    inset 0 0 24px rgba(128, 0, 0, 0.26),
     0 14px 34px rgba(8, 2, 2, 0.62);
 }
 
@@ -239,16 +273,15 @@ a {
 .trinity-hebrew {
   margin: 0;
   text-align: center;
-  color: #ff2f2f;
-  font-family: "Noto Sans Hebrew", "Arial Hebrew", "Arial", sans-serif;
+  color: var(--gold);
+  font-family: "Cormorant Garamond", "Times New Roman", serif;
   font-size: 1.55rem;
   line-height: 1.1;
   font-weight: 700;
   text-shadow:
-    0 0 4px rgba(255, 64, 64, 0.98),
-    0 0 10px rgba(255, 0, 0, 0.84),
-    0 0 20px rgba(255, 0, 0, 0.62),
-    0 0 34px rgba(150, 0, 0, 0.44);
+    0 0 4px rgba(217, 178, 95, 0.72),
+    0 0 12px rgba(217, 178, 95, 0.38),
+    0 0 22px rgba(255, 31, 55, 0.26);
 }
 
 .trinity-hide-button {
@@ -332,14 +365,18 @@ select {
 
 .pill:hover {
   border-color: var(--accent);
-  box-shadow: 0 0 18px rgba(255, 47, 61, 0.28);
+  box-shadow:
+    0 0 18px rgba(255, 31, 55, 0.24),
+    0 0 14px rgba(217, 178, 95, 0.12);
 }
 
 .pill.active {
   background: linear-gradient(145deg, rgba(255, 54, 69, 0.96), rgba(164, 11, 24, 0.9));
   color: #fff4f5;
   border-color: rgba(255, 111, 124, 0.76);
-  box-shadow: 0 0 20px rgba(255, 47, 61, 0.3);
+  box-shadow:
+    0 0 20px rgba(255, 31, 55, 0.3),
+    0 0 18px rgba(217, 178, 95, 0.16);
 }
 
 .pill.locked-pill {
@@ -686,7 +723,8 @@ select {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.19em;
-  color: var(--ink-soft);
+  color: var(--gold);
+  text-shadow: 0 0 14px rgba(217, 178, 95, 0.18);
 }
 
 .type {

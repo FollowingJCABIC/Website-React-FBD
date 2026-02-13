@@ -434,7 +434,7 @@ function AppShell() {
           <span className="brand-mark">LD</span>
           <div>
             <p className="eyebrow">Last Day Studio</p>
-            <p className="brand-sub">Daily practice, study, and work</p>
+            <p className="brand-sub">Catholic study, prayer, and work</p>
           </div>
         </div>
 
@@ -649,9 +649,9 @@ function AppShell() {
         <aside className="trinity-banner-rail" aria-label={`${currentViewLabel} banner`}>
           <p className="trinity-view-label">{currentViewLabel}</p>
           <div className="trinity-stack">
-            <p className="trinity-hebrew">אב</p>
-            <p className="trinity-hebrew">בן</p>
-            <p className="trinity-hebrew">רוח</p>
+            <p className="trinity-hebrew">Pater</p>
+            <p className="trinity-hebrew">Filius</p>
+            <p className="trinity-hebrew">Spiritus</p>
           </div>
           <button className="pill trinity-hide-button" type="button" onClick={() => setBannerHiddenForCurrentView(true)}>
             Hide on this view
